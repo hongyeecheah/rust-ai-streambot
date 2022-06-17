@@ -1,0 +1,4 @@
+[package]
+name = "rsllm"
+description = "Rust AI Stream Analyzer Twitch Bot"
+keywords = ["ai", "stable-diffusion", "ndi", "text-to-speech", "
