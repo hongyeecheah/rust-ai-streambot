@@ -1,4 +1,9 @@
 [package]
 name = "rsllm"
 description = "Rust AI Stream Analyzer Twitch Bot"
-keywords = ["ai", "stable-diffusion", "ndi", "text-to-speech", "
+keywords = ["ai", "stable-diffusion", "ndi", "text-to-speech", "twitch"]
+categories = ["command-line-utilities"]
+readme = "README.md"
+documentation = "https://docs.rs/rsllm"
+license-file = "LICENSE"
+homepage = "https://git
