@@ -13,4 +13,10 @@ version = "0.6.3"
 edition = "2021"
 
 [lib]
-path = "s
+path = "src/lib.rs"
+
+[features]
+default = []
+dpdk_enabled = ["capsule"]
+mps = ["candle-core/metal", "candle-nn/metal", "metal", "candle-metal-kernels"]
+ndi = ["ndi-sdk-rsl
