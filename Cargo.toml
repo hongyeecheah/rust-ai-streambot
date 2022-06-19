@@ -19,4 +19,13 @@ path = "src/lib.rs"
 default = []
 dpdk_enabled = ["capsule"]
 mps = ["candle-core/metal", "candle-nn/metal", "metal", "candle-metal-kernels"]
-ndi = ["ndi-sdk-rsl
+ndi = ["ndi-sdk-rsllm"]
+metavoice = []
+audioplayer = ["rodio"]
+fonts = ["rusttype", "imageproc"]
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+
+[dependencie
