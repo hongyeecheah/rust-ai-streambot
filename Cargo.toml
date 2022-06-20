@@ -28,4 +28,8 @@ fonts = ["rusttype", "imageproc"]
 inherits = "release"
 debug = true
 
-[dependencie
+[dependencies]
+hf-hub = "0.3.0"
+tracing-subscriber = "0.3.7"
+tracing-chrome = "0.7.1"
+candle-examples = { git = "https://github.com/huggingface/candle.git", 
