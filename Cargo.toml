@@ -34,4 +34,5 @@ tracing-subscriber = "0.3.7"
 tracing-chrome = "0.7.1"
 candle-examples = { git = "https://github.com/huggingface/candle.git", version = "0.5.0" }
 tokenizers = { version = "0.19.1", default-features = false }
-candle-metal-kernels = { git = "https://github.c
+candle-metal-kernels = { git = "https://github.com/huggingface/candle.git", version = "0.5.0", optional = true }
+candle-nn = { git = "https://github.com/huggingface/candle.git", version = "0.5.0" 
