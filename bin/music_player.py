@@ -10,4 +10,8 @@ playlist_file = "/tmp/ffmpeg_playlist.txt"
 checksum_file = "/tmp/playlist_checksum.txt"
 
 def get_files_sorted_by_mtime(directory, extension=".wav"):
-    files
+    files = []
+    for root, dirs, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith(extension):
+                full_path = os.
