@@ -18,4 +18,10 @@ def get_files_sorted_by_mtime(directory, extension=".wav"):
                 files.append(full_path)
     return sorted(files, key=os.path.getmtime)
 
-def generate_playlist(files, playl
+def generate_playlist(files, playlist_path):
+    with open(playlist_path, 'w') as playlist:
+        for file in files:
+            playlist.write(f"file '{file}'\n")
+
+def calculate_checksum(files):
+    
