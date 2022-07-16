@@ -24,4 +24,8 @@ def generate_playlist(files, playlist_path):
             playlist.write(f"file '{file}'\n")
 
 def calculate_checksum(files):
-    
+    hash_md5 = md5()
+    for file in files:
+        with open(file, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5
