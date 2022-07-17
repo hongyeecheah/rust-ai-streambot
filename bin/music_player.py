@@ -28,4 +28,10 @@ def calculate_checksum(files):
     for file in files:
         with open(file, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
-                hash_md5
+                hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+def read_previous_checksum(checksum_path):
+    try:
+        with open(checksum_path, 'r') as file:
+            retur
