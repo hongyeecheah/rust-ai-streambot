@@ -34,4 +34,9 @@ def calculate_checksum(files):
 def read_previous_checksum(checksum_path):
     try:
         with open(checksum_path, 'r') as file:
-            retur
+            return file.read().strip()
+    except FileNotFoundError:
+        return ''
+
+def write_new_checksum(checksum, checksum_path):
+    with open(checksum_path,
