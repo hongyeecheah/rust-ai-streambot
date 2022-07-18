@@ -39,4 +39,8 @@ def read_previous_checksum(checksum_path):
         return ''
 
 def write_new_checksum(checksum, checksum_path):
-    with open(checksum_path,
+    with open(checksum_path, 'w') as file:
+        file.write(checksum)
+
+def concatenate_files(playlist_path, output_path):
+    cmd = ['ffmpeg', '-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', pla
