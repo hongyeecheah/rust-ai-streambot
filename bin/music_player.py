@@ -43,4 +43,9 @@ def write_new_checksum(checksum, checksum_path):
         file.write(checksum)
 
 def concatenate_files(playlist_path, output_path):
-    cmd = ['ffmpeg', '-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', pla
+    cmd = ['ffmpeg', '-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', playlist_path, '-c', 'copy', output_path]
+    print("Running command:", ' '.join(cmd))
+    subprocess.run(cmd, check=True)
+
+def play_audio(file_path):
+    s
