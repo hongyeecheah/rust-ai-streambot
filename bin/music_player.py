@@ -53,4 +53,9 @@ def play_audio(file_path):
 while True:
     files = get_files_sorted_by_mtime(music_dir)
     if not files:
-        print("No .wav 
+        print("No .wav files found in the directory.")
+    else:
+        current_checksum = calculate_checksum(files)
+        previous_checksum = read_previous_checksum(checksum_file)
+
+       
