@@ -60,4 +60,6 @@ while True:
 
         if current_checksum != previous_checksum or not os.path.exists(output_file):
             print("Changes detected or output file missing, regenerating...")
-            generate_p
+            generate_playlist(files, playlist_file)
+            concatenate_files(playlist_file, output_file)
+            write_new_checksum(current_checksum, checksu
