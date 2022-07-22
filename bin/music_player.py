@@ -58,4 +58,6 @@ while True:
         current_checksum = calculate_checksum(files)
         previous_checksum = read_previous_checksum(checksum_file)
 
-       
+        if current_checksum != previous_checksum or not os.path.exists(output_file):
+            print("Changes detected or output file missing, regenerating...")
+            generate_p
