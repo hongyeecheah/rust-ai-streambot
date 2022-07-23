@@ -62,4 +62,9 @@ while True:
             print("Changes detected or output file missing, regenerating...")
             generate_playlist(files, playlist_file)
             concatenate_files(playlist_file, output_file)
-            write_new_checksum(current_checksum, checksu
+            write_new_checksum(current_checksum, checksum_file)
+        else:
+            print("No changes detected. Using existing combined audio file.")
+
+        print("Playing combined playlist...")
+        play_audio(outp
