@@ -67,4 +67,5 @@ while True:
             print("No changes detected. Using existing combined audio file.")
 
         print("Playing combined playlist...")
-        play_audio(outp
+        play_audio(output_file)
+
