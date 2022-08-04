@@ -7,4 +7,7 @@ SOFTWARE PRODUCT LICENSE
 The SOFTWARE PRODUCT is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties. The SOFTWARE PRODUCT is licensed, not sold.
 
 
-1. GRANT OF LICENSE. This EULA grants you the following ri
+1. GRANT OF LICENSE. This EULA grants you the following rights:
+
+Installation and Use. You may install and use an unlimited number of copies of the SOFTWARE PRODUCT.
+Reproduction and Distribution. You may reproduce and distribute an unlimited
