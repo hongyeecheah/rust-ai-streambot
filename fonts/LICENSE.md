@@ -10,4 +10,4 @@ The SOFTWARE PRODUCT is protected by copyright laws and international copyright 
 1. GRANT OF LICENSE. This EULA grants you the following rights:
 
 Installation and Use. You may install and use an unlimited number of copies of the SOFTWARE PRODUCT.
-Reproduction and Distribution. You may reproduce and distribute an unlimited
+Reproduction and Distribution. You may reproduce and distribute an unlimited number of copies of the SOFTWARE PRODUCT; provided that each copy shall be a true and complete copy, including all copyright and trademark notices, and shall
