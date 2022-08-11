@@ -14,4 +14,4 @@ Reproduction and Distribution. You may reproduce and distribute an unlimited num
 
 2. DESCRIPTION OF OTHER RIGHTS AND LIMITATIONS.
 
-Limitations on Reverse Engineering, Decompilation, and Disassembly. 
+Limitations on Reverse Engineering, Decompilation, and Disassembly. You may not reverse engineer, decompile, or disassemble the SOFTWARE PRODUCT, except and only to the extent that such activity is expressly permitted by appli
