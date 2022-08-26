@@ -34,4 +34,8 @@ NO LIABILITY FOR CONSEQUENTIAL DAMAGES. In no event shall Microsoft or its suppl
 
 MISCELLANEOUS
 
-If you acquired this produ
+If you acquired this product in the United States, this EULA is governed by the laws of the State of Washington.
+
+If this product was acquired outside the United States, then local laws may apply.
+
+Shou
