@@ -38,4 +38,4 @@ If you acquired this product in the United States, this EULA is governed by the 
 
 If this product was acquired outside the United States, then local laws may apply.
 
-Shou
+Should you have any questions concerning this EULA, or if you desire to contact Microsoft for any reason, please contact the Microsoft subsidiary serving your coun
