@@ -13,4 +13,10 @@ if [ "$DYLD_LIBRARY_PATH" = "" ]; then
 fi
 
 ## Build release version
-cargo b
+cargo build \
+    --release \
+    --features mps,ndi,audioplayer,metavoice,fonts
+
+# Build debug version
+cargo build \
+    --features mps,ndi,audioplayer,metavoice,fon
