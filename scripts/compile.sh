@@ -19,4 +19,13 @@ cargo build \
 
 # Build debug version
 cargo build \
-    --features mps,ndi,audioplayer,metavoice,fon
+    --features mps,ndi,audioplayer,metavoice,fonts
+
+if [ ! -f "target/release/rsllm" ]; then
+    echo "Error building rsllm, please check output"
+    exit 1
+fi
+
+./target/release/rsllm -h
+
+echo "Done, rsllm works and
