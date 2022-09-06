@@ -28,4 +28,4 @@ fi
 
 ./target/release/rsllm -h
 
-echo "Done, rsllm works and
+echo "Done, rsllm works and is in target/release/rsllm"
