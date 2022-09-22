@@ -11,4 +11,9 @@
 # === CONFIGURATION ===
 BUILD_TYPE=release
 ## Interstitial message
-GREETING="Hi I'm Alice, ask me a question by typing '!me
+GREETING="Hi I'm Alice, ask me a question by typing '!message Alice <message>' or chat with me in the chat. Please remember to follow me!"
+## LLM Model Config
+# Candle settings
+USE_CANDLE=0
+MODEL=mistral
+#MODEL=g
