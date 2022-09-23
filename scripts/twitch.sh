@@ -16,4 +16,12 @@ GREETING="Hi I'm Alice, ask me a question by typing '!message Alice <message>' o
 # Candle settings
 USE_CANDLE=0
 MODEL=mistral
-#MODEL=g
+#MODEL=gemma
+MODEL_ID=7b-it
+# Generic settings
+USE_API=1
+#CHAT_FORMAT=chatml
+#CHAT_FORMAT=llama2
+CHAT_FORMAT=vicuna
+MAX_TOKENS=800
+TEMPERATURE
