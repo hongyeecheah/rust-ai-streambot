@@ -66,4 +66,10 @@ ASYNC_CONCURRENCY_CMD=
 SD_INTERMEDIARY_IMAGES_CMD=
 SD_API_CMD=
 USE_CANDLE_CMD=
-if [ "$SD_API" == 1 ]; the
+if [ "$SD_API" == 1 ]; then
+    SD_API_CMD="--sd-api"
+fi
+if [ "$SD_INTERMEDIARY_IMAGES" == 1 ]; then
+    SD_INTERMEDIARY_IMAGES_CMD="--sd-intermediary-images"
+fi
+if [ "$USE_CANDLE_CMD
