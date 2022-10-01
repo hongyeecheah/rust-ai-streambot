@@ -72,4 +72,11 @@ fi
 if [ "$SD_INTERMEDIARY_IMAGES" == 1 ]; then
     SD_INTERMEDIARY_IMAGES_CMD="--sd-intermediary-images"
 fi
-if [ "$USE_CANDLE_CMD
+if [ "$USE_CANDLE_CMD" == 1 ]; then
+    USE_CANDLE_CMD="--candle-llm $MODEL"
+fi
+if [ "$USE_API" == 1 ]; then
+    USE_API_CMD="--use-api"
+fi
+if [ "$ASYNC_CONCURRENCY" == 1 ]; then
+    ASYNC_CONCURR
