@@ -79,4 +79,10 @@ if [ "$USE_API" == 1 ]; then
     USE_API_CMD="--use-api"
 fi
 if [ "$ASYNC_CONCURRENCY" == 1 ]; then
-    ASYNC_CONCURR
+    ASYNC_CONCURRENCY_CMD="--async-concurrency"
+fi
+if [ "$SUBTITLES" == 1 ]; then
+    SUBTITLE_CMD="--subtitles"
+fi
+if [ "$DAEMON" == 1 ]; then
+    DAEMON_CMD="
