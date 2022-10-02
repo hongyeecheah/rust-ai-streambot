@@ -85,4 +85,12 @@ if [ "$SUBTITLES" == 1 ]; then
     SUBTITLE_CMD="--subtitles"
 fi
 if [ "$DAEMON" == 1 ]; then
-    DAEMON_CMD="
+    DAEMON_CMD="--daemon"
+fi
+if [ "$CONTINUOUS" == 1 ]; then
+    CONTINUOUS_CMD="--continuous"
+fi
+if [ "$KEEP_HISTORY" == 0 ]; then
+    NO_HISTORY_CMD="--no-history"
+fi
+if [ "$QUANTIZED" == 1 ]; 
