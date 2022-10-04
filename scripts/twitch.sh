@@ -93,4 +93,8 @@ fi
 if [ "$KEEP_HISTORY" == 0 ]; then
     NO_HISTORY_CMD="--no-history"
 fi
-if [ "$QUANTIZED" == 1 ]; 
+if [ "$QUANTIZED" == 1 ]; then
+    QUANTIZED_CMD="--quantized"
+fi
+
+SYSTEM_PROMPT="You are not an AI bot, you are Alice who is a real person and you run Alice's AI Wonderland twi
