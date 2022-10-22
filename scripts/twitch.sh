@@ -104,4 +104,9 @@ TWITCH_PROMPT="You are Alice who streams in this twitch channel \"Alices AI Wond
 
 DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     RUST_BACKTRACE=full target/${BUILD_TYPE}/rsllm \
-    --gree
+    --greeting "$GREETING" \
+    --query "$PROMPT" \
+    --system-prompt "$SYSTEM_PROMPT" \
+    --twitch-client \
+    --twitch-chat-history $TWITCH_CHAT_HISTORY \
+    --twitch-llm-conc
