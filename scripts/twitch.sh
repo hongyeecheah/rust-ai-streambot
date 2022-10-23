@@ -109,4 +109,7 @@ DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     --system-prompt "$SYSTEM_PROMPT" \
     --twitch-client \
     --twitch-chat-history $TWITCH_CHAT_HISTORY \
-    --twitch-llm-conc
+    --twitch-llm-concurrency $TWITCH_LLM_CONCURRENCY \
+    --twitch-model $TWITCH_MODEL \
+    --twitch-max-tokens-chat $TWITCH_MAX_TOKENS_CHAT \
+    --twitch-max-tokens-llm $TWITCH_
