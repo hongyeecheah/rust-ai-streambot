@@ -112,4 +112,11 @@ DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     --twitch-llm-concurrency $TWITCH_LLM_CONCURRENCY \
     --twitch-model $TWITCH_MODEL \
     --twitch-max-tokens-chat $TWITCH_MAX_TOKENS_CHAT \
-    --twitch-max-tokens-llm $TWITCH_
+    --twitch-max-tokens-llm $TWITCH_MAX_TOKENS_LLM \
+    --twitch-prompt "$TWITCH_PROMPT" \
+    --mimic3-tts \
+    $SD_API_CMD \
+    --sd-width $SD_WIDTH \
+    --sd-height $SD_HEIGHT \
+    --sd-image \
+  
