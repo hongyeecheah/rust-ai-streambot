@@ -123,4 +123,11 @@ DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     --sd-custom-model $SD_CUSTOM_MODEL \
     --sd-n-steps $SD_N_STEPS \
     --image-alignment $ALIGNMENT \
-    $SUBTITLE_CM
+    $SUBTITLE_CMD \
+    $SD_INTERMEDIARY_IMAGES_CMD \
+    --ndi-audio \
+    --ndi-images \
+    --ndi-timeout $NDI_TIMEOUT \
+    $USE_API_CMD \
+    $USE_CANDLE_CMD \
+    --sd-text-min 
