@@ -119,4 +119,8 @@ DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     --sd-width $SD_WIDTH \
     --sd-height $SD_HEIGHT \
     --sd-image \
-  
+    --sd-model $SD_MODEL \
+    --sd-custom-model $SD_CUSTOM_MODEL \
+    --sd-n-steps $SD_N_STEPS \
+    --image-alignment $ALIGNMENT \
+    $SUBTITLE_CM
