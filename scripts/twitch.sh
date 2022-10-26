@@ -135,4 +135,9 @@ DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     --llm-history-size $CONTEXT_SIZE \
     --chat-format $CHAT_FORMAT \
     --model-id $MODEL_ID \
-    --temperature $TEMPERATU
+    --temperature $TEMPERATURE \
+    --pipeline-concurrency $PIPELINE_CONCURRENCY \
+    --poll-interval $POLL_INTERVAL \
+    $SINGLE_CONCURRENCY_CMD \
+    $DAEMON_CMD \
+    $CONTINUOUS_CM
