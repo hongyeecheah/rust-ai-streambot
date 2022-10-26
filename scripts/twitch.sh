@@ -130,4 +130,9 @@ DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     --ndi-timeout $NDI_TIMEOUT \
     $USE_API_CMD \
     $USE_CANDLE_CMD \
-    --sd-text-min 
+    --sd-text-min $SD_TEXT_MIN \
+    --sd-max-length $SD_MAX_LENGTH \
+    --llm-history-size $CONTEXT_SIZE \
+    --chat-format $CHAT_FORMAT \
+    --model-id $MODEL_ID \
+    --temperature $TEMPERATU
