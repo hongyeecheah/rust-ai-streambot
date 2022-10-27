@@ -140,4 +140,7 @@ DYLD_LIBRARY_PATH=`pwd`:/usr/local/lib:$DYLD_LIBRARY_PATH \
     --poll-interval $POLL_INTERVAL \
     $SINGLE_CONCURRENCY_CMD \
     $DAEMON_CMD \
-    $CONTINUOUS_CM
+    $CONTINUOUS_CMD \
+    $NO_HISTORY_CMD \
+    $QUANTIZED_CMD \
+    --max-tokens $MAX_TOKENS $@
