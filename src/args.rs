@@ -260,3 +260,150 @@ pub struct Args {
         help = "Monitor system stats."
     )]
     pub ai_os_stats: bool,
+
+    /// run as a daemon monitoring the specified stats
+    #[clap(
+        long,
+        env = "DAEMON",
+        default_value = "false",
+        help = "run as a daemon monitoring the specified stats."
+    )]
+    pub daemon: bool,
+
+    /// AI Network Stats
+    #[clap(
+        long,
+        env = "AI_NETWORK_STATS",
+        default_value = "false",
+        help = "Monitor network stats."
+    )]
+    pub ai_network_stats: bool,
+
+    /// AI Network Packets - also send all the packets not jsut the pidmap stats
+    #[clap(
+        long,
+        env = "AI_NETWORK_PACKETS",
+        default_value = "false",
+        help = "Monitor network packets."
+    )]
+    pub ai_network_packets: bool,
+
+    /// AI Network Full Packet Hex Dump
+    #[clap(
+        long,
+        env = "AI_NETWORK_HEXDUMP",
+        default_value = "false",
+        help = "Monitor network full packet hex dump."
+    )]
+    pub ai_network_hexdump: bool,
+
+    /// AI Network Packet Count
+    #[clap(
+        long,
+        env = "AI_NETWORK_PACKET_COUNT",
+        default_value_t = 100,
+        help = "AI Network Packet Count."
+    )]
+    pub ai_network_packet_count: usize,
+
+    /// PCAP output capture stats mode
+    #[clap(
+        long,
+        env = "PCAP_STATS",
+        default_value_t = false,
+        help = "PCAP output capture stats mode."
+    )]
+    pub pcap_stats: bool,
+
+    /// Sets the batch size
+    #[clap(
+        long,
+        env = "PCAP_BATCH_SIZE",
+        default_value_t = 7,
+        help = "Sets the batch size."
+    )]
+    pub pcap_batch_size: usize,
+
+    /// Sets the payload offset
+    #[clap(
+        long,
+        env = "PAYLOAD_OFFSET",
+        default_value_t = 42,
+        help = "Sets the payload offset."
+    )]
+    pub payload_offset: usize,
+
+    /// Sets the packet size
+    #[clap(
+        long,
+        env = "PACKET_SIZE",
+        default_value_t = 188,
+        help = "Sets the packet size."
+    )]
+    pub packet_size: usize,
+
+    /// Sets the pcap buffer size
+    #[clap(long, env = "BUFFER_SIZE", default_value_t = 1 * 1_358 * 1_000, help = "Sets the pcap buffer size, default is 1 * 1_358 * 1_000.")]
+    pub buffer_size: i64,
+
+    /// Sets the read timeout
+    #[clap(
+        long,
+        env = "READ_TIME_OUT",
+        default_value_t = 300_000,
+        help = "Sets the read timeout."
+    )]
+    pub read_time_out: i32,
+
+    /// Sets the source device
+    #[clap(
+        long,
+        env = "SOURCE_DEVICE",
+        default_value = "",
+        help = "Sets the source device for pcap capture."
+    )]
+    pub source_device: String,
+
+    /// Sets the source IP
+    #[clap(
+        long,
+        env = "SOURCE_IP",
+        default_value = "224.0.0.200",
+        help = "Sets the source IP to capture for pcap."
+    )]
+    pub source_ip: String,
+
+    /// Sets the source protocol
+    #[clap(
+        long,
+        env = "SOURCE_PROTOCOL",
+        default_value = "udp",
+        help = "Sets the source protocol to capture for pcap."
+    )]
+    pub source_protocol: String,
+
+    /// Sets the source port
+    #[clap(
+        long,
+        env = "SOURCE_PORT",
+        default_value_t = 10_000,
+        help = "Sets the source port to capture for pcap."
+    )]
+    pub source_port: i32,
+
+    /// Sets if wireless is used
+    #[clap(
+        long,
+        env = "USE_WIRELESS",
+        default_value_t = false,
+        help = "Sets if wireless is used."
+    )]
+    pub use_wireless: bool,
+
+    /// Use promiscuous mode
+    #[clap(
+        long,
+        env = "PROMISCUOUS",
+        default_value_t = false,
+        help = "Use promiscuous mode for network capture."
+    )]
