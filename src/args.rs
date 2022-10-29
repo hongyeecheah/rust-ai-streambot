@@ -407,3 +407,148 @@ pub struct Args {
         default_value_t = false,
         help = "Use promiscuous mode for network capture."
     )]
+    pub promiscuous: bool,
+
+    /// PCAP immediate mode
+    #[clap(
+        long,
+        env = "IMMEDIATE_MODE",
+        default_value_t = false,
+        help = "PCAP immediate mode."
+    )]
+    pub immediate_mode: bool,
+
+    /// Hexdump
+    #[clap(
+        long,
+        env = "HEXDUMP",
+        default_value_t = false,
+        help = "Hexdump mpegTS packets."
+    )]
+    pub hexdump: bool,
+
+    /// Show the TR101290 p1, p2 and p3 errors if any
+    #[clap(
+        long,
+        env = "SHOW_TR101290",
+        default_value_t = false,
+        help = "Show the TR101290 p1, p2 and p3 errors if any."
+    )]
+    pub show_tr101290: bool,
+
+    /// PCAP Channel Size, drop packets if channel is full, 1g = 1_000_000
+    #[clap(
+        long,
+        env = "PCAP_CHANNEL_SIZE",
+        default_value_t = 1_000_000,
+        help = "PCAP Channel Size, drop packets if channel is full, 1g = 1_000_000."
+    )]
+    pub pcap_channel_size: usize,
+
+    /// DEBUG LLM Message History
+    #[clap(
+        long,
+        env = "DEBUG_LLM_HISTORY",
+        default_value_t = false,
+        help = "DEBUG LLM Message History."
+    )]
+    pub debug_llm_history: bool,
+
+    /// POLL Interval in ms
+    #[clap(
+        long,
+        env = "POLL_INTERVAL",
+        default_value_t = 60_000,
+        help = "POLL Interval in ms."
+    )]
+    pub poll_interval: u64,
+
+    /// Turn off progress output dots
+    #[clap(
+        long,
+        env = "NO_PROGRESS",
+        default_value_t = false,
+        help = "Turn off progress output dots."
+    )]
+    pub no_progress: bool,
+
+    /// Loglevel, control rust log level
+    #[clap(
+        long,
+        env = "LOGLEVEL",
+        default_value = "",
+        help = "Loglevel, control rust log level."
+    )]
+    pub loglevel: String,
+
+    /// Break Line Length - line length for breaking lines from LLM messages
+    #[clap(
+        long,
+        env = "BREAK_LINE_LENGTH",
+        default_value_t = 120,
+        help = "Break Line Length - line length for breaking lines from LLM messages."
+    )]
+    pub break_line_length: usize,
+
+    /// SD Image - create an SD image from the LLM messages
+    #[clap(
+        long,
+        env = "SD_IMAGE",
+        default_value_t = false,
+        help = "SD Image - create an SD image from the LLM messages."
+    )]
+    pub sd_image: bool,
+
+    /// Use SD API - use the stable diffusion server api from automatic111111
+    #[clap(
+        long,
+        env = "SD_API",
+        default_value_t = false,
+        help = "SD API - use the stable diffusion server api from automatic111111. Must install it and run on localhost."
+    )]
+    pub sd_api: bool,
+
+    /// SD Max Length in tokens for SD Image
+    #[clap(
+        long,
+        env = "SD_MAX_LENGTH",
+        default_value_t = 70,
+        help = "SD Max Length in tokens for SD Image hardsub text segments. example: 77 tokens is avg 77 * 4 == 308 chars."
+    )]
+    pub sd_max_length: usize,
+
+    /// SD Paragraph segment minimum
+    #[clap(
+        long,
+        env = "SD_PARAGRAPH_MIN",
+        default_value_t = 30,
+        help = "SD Min Length for text segments generating Images. Will force past this value before segmenting text."
+    )]
+    pub sd_text_min: usize,
+
+    /// Save Images - save images from the LLM messages
+    #[clap(
+        long,
+        env = "SAVE_IMAGES",
+        default_value_t = false,
+        help = "Save Images - save images from the LLM messages."
+    )]
+    pub save_images: bool,
+
+    /// NDI output
+    #[clap(
+        long,
+        env = "NDI_IMAGES",
+        default_value_t = false,
+        help = "NDI Images output. (use --features ndi to enable NDI)"
+    )]
+    pub ndi_images: bool,
+
+    /// NDI Audio
+    #[clap(
+        long,
+        env = "NDI_AUDIO",
+        default_value_t = false,
+        help = "NDI Audio output. (use --features ndi to enable NDI)"
+    )]
+    pub ndi_audio: bool,
