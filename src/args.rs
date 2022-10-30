@@ -552,3 +552,185 @@ pub struct Args {
         help = "NDI Audio output. (use --features ndi to enable NDI)"
     )]
     pub ndi_audio: bool,
+
+    /// Max Iterations
+    #[clap(
+        long,
+        env = "MAX_ITERATIONS",
+        default_value_t = 1,
+        help = "Max Iterations."
+    )]
+    pub max_iterations: i32,
+
+    /// Use API for LLM
+    #[clap(
+        long,
+        env = "USE_API",
+        default_value_t = false,
+        help = "Use APIfor LLM, else Candle is used."
+    )]
+    pub use_api: bool,
+
+    /// which llm to use from candle, string
+    #[clap(
+        long,
+        env = "CANDLE_LLM",
+        default_value = "mistral",
+        help = "which llm to use from candle."
+    )]
+    pub candle_llm: String,
+
+    /// sd height
+    #[clap(long, env = "SD_HEIGHT", default_value_t = 512, help = "SD Height.")]
+    pub sd_height: usize,
+
+    /// sd width
+    #[clap(long, env = "SD_WIDTH", default_value_t = 512, help = "SD Width.")]
+    pub sd_width: usize,
+
+    /// sd scaled height
+    #[clap(
+        long,
+        env = "SD_SCALED_HEIGHT",
+        default_value_t = 1080,
+        help = "SD Scaled Height."
+    )]
+    pub sd_scaled_height: u32,
+
+    /// sd scaled width
+    #[clap(
+        long,
+        env = "SD_SCALED_WIDTH",
+        default_value_t = 1920,
+        help = "SD Scaled Width."
+    )]
+    pub sd_scaled_width: u32,
+
+    /// SD INTERMEDIARY IMAGES
+    #[clap(
+        long,
+        env = "SD_INTERMEDIARY_IMAGES",
+        default_value_t = false,
+        help = "SD Intermediary Images."
+    )]
+    pub sd_intermediary_images: bool,
+
+    /// Stable Diffusion Custom Model Name to load
+    #[clap(
+        long,
+        env = "SD_CUSTOM_MODEL",
+        default_value = "sd_xl_turbo_1.0.safetensors",
+        help = "Custom Stable Diffusion Model. for automatic 111111 API usage, the name must exist as a model locally or remotely."
+    )]
+    pub sd_custom_model: String,
+
+    /// Stable Diffusion Version
+    #[clap(
+        long,
+        env = "SD_MODEL",
+        default_value = "turbo",
+        help = "Stable Diffusion Model. options are 1.5, 2.1, xl, turbo"
+    )]
+    pub sd_model: String,
+
+    /// sd_n_steps - number of steps for SD
+    #[clap(long, env = "SD_N_STEPS", help = "SD N Steps.")]
+    pub sd_n_steps: Option<usize>,
+
+    /// hardsub font size
+    #[clap(
+        long,
+        env = "HARDSUB_FONT_SIZE",
+        default_value = "60.0",
+        help = "hardsub font size"
+    )]
+    pub hardsub_font_size: f32,
+
+    /// Image alignment - left or right, center is default
+    #[clap(
+        long,
+        env = "IMAGE_ALIGNMENT",
+        default_value = "center",
+        help = "Image alignment - left or right, center is default."
+    )]
+    pub image_alignment: String,
+
+    /// shutdown_msg - message to send when shutting down
+    #[clap(
+        long,
+        env = "GREETING",
+        default_value = "Hi I'm Alice, ask me a question!",
+        help = "greeting - message to send after done speaking."
+    )]
+    pub greeting: String,
+
+    /// assistant image description
+    #[clap(
+        long,
+        env = "ASSISTANT_IMAGE_DESCRIPTION",
+        default_value = "A head shot of Alice from Alice in AI Wonderland. A streaming girl on twitch who is live streaming AI generated content. Similar a magical anime girl in appearance.",
+        help = "assistant image description."
+    )]
+    pub assistant_image_prompt: String,
+
+    /// Subtitles - enable subtitles
+    #[clap(
+        long,
+        env = "SUBTITLES",
+        default_value_t = false,
+        help = "Subtitles - enable subtitles."
+    )]
+    pub subtitles: bool,
+
+    /// Subtitle position - top, mid-top, center, mid-bottom, bottom - bottom is default
+    #[clap(
+        long,
+        env = "SUBTITLE_POSITION",
+        default_value = "bottom",
+        help = "Subtitle position."
+    )]
+    pub subtitle_position: String,
+
+    /// Continuous - continuous mode where it will keep running the query until stopped
+    #[clap(
+        long,
+        env = "CONTINUOUS",
+        default_value_t = false,
+        help = "Continuous - continuous mode where it will keep running the query until stopped."
+    )]
+    pub continuous: bool,
+
+    /// enable twitch client
+    #[clap(
+        long,
+        env = "TWITCH_CLIENT",
+        default_value_t = false,
+        help = "enable twitch client."
+    )]
+    pub twitch_client: bool,
+
+    /// twitch username
+    #[clap(
+        long,
+        env = "TWITCH_USERNAME",
+        default_value = "",
+        help = "twitch username."
+    )]
+    pub twitch_username: String,
+
+    /// twitch channel
+    #[clap(
+        long,
+        env = "TWITCH_CHANNEL",
+        default_value = "",
+        help = "twitch channel."
+    )]
+    pub twitch_channel: String,
+
+    /// Twitch Chat history - number of messages to keep in history
+    #[clap(
+        long,
+        env = "TWITCH_CHAT_HISTORY",
+        default_value_t = 10,
+        help = "Twitch Chat history - number of messages to keep in history."
+    )]
