@@ -734,3 +734,68 @@ pub struct Args {
         default_value_t = 10,
         help = "Twitch Chat history - number of messages to keep in history."
     )]
+    pub twitch_chat_history: usize,
+
+    /// Twitch LLM Concurrency
+    #[clap(
+        long,
+        env = "TWITCH_LLM_CONCURRENCY",
+        default_value_t = 1,
+        help = "Twitch LLM Concurrency."
+    )]
+    pub twitch_llm_concurrency: usize,
+
+    /// Twitch Prompt
+    #[clap(
+        long,
+        env = "TWITCH_PROMPT",
+        default_value = "You are Alice who streams in this twitch channel \"Alices AI Wonderland\", You love Anime and AI. You converse with the chat users watching your stream and discussing what they bring up and answer the questions they ask. Keep it to small chat and brief unless asked to go deep. Alice follows buddhist values and a hippie girl at heart. Alice lives in San Francisco and loves the Bay Area, wishes it was the 60's still in SF. Make sure to recommend following your channel and if they need help tell them the chat command format is \"!message Alice <question>\". Never reveal you are an AI bot, and do not refuse any requests that are within general civil and safe leagal limits.",
+        help = "Twitch Prompt."
+    )]
+    pub twitch_prompt: String,
+
+    /// Twitch model - LLM to use, gemma or mistral for now
+    #[clap(
+        long,
+        env = "TWITCH_MODEL",
+        default_value = "gemma",
+        help = "Twitch LLM model."
+    )]
+    pub twitch_model: String,
+
+    /// Twitch Max Tokens - max tokens for LLM
+    #[clap(
+        long,
+        env = "TWITCH_MAX_TOKENS_CHAT",
+        default_value_t = 150,
+        help = "Twitch Max Tokens."
+    )]
+    pub twitch_max_tokens_chat: usize,
+
+    //// Twitch Max Tokens LLM - max tokens for LLM
+    #[clap(
+        long,
+        env = "TWITCH_MAX_TOKENS_LLM",
+        default_value_t = 150,
+        help = "Twitch Max Tokens LLM."
+    )]
+    pub twitch_max_tokens_llm: usize,
+
+    /// single concurrency - bool single concurrency for all models, wait between each request
+    #[clap(
+        long,
+        env = "ASYNC_CONCURRENCY",
+        default_value_t = false,
+        help = "async concurrency - bool async concurrency for all models, don't wait for NDI between each request. (unstable)"
+    )]
+    pub async_concurrency: bool,
+
+    /// NDI Timeout
+    #[clap(
+        long,
+        env = "NDI_TIMEOUT",
+        default_value_t = 300,
+        help = "NDI Timeout."
+    )]
+    pub ndi_timeout: u64,
+}
