@@ -8,4 +8,6 @@ use std::io::Result;
 /// * `wav_data` - The bytes of a WAV file.
 ///
 /// # Returns
-/
+/// A `Result` containing a `Vec<f32>` of normalized audio samples, or an `Error`.
+pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
+  
