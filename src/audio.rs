@@ -10,4 +10,8 @@ use std::io::Result;
 /// # Returns
 /// A `Result` containing a `Vec<f32>` of normalized audio samples, or an `Error`.
 pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
-  
+    let cursor = Cursor::new(wav_data);
+    let reader_result = hound::WavReader::new(cursor);
+
+    // Check if the reader was successfully created
+    let reader 
