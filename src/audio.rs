@@ -14,4 +14,6 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
     let reader_result = hound::WavReader::new(cursor);
 
     // Check if the reader was successfully created
-    let reader 
+    let reader = match reader_result {
+        Ok(r) => r,
+        Err(_) => return Ok(Vec::new()), // In case of an error, return an empty vector to match the m
