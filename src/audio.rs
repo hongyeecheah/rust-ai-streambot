@@ -16,4 +16,9 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
     // Check if the reader was successfully created
     let reader = match reader_result {
         Ok(r) => r,
-        Err(_) => return Ok(Vec::new()), // In case of an error, return an empty vector to match the m
+        Err(_) => return Ok(Vec::new()), // In case of an error, return an empty vector to match the mp3_to_f32 strategy
+    };
+
+    // Depending on the sample format, process the samples differently
+    let spec = reader.spec();
+    let sample_f
