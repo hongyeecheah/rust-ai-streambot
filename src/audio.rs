@@ -25,4 +25,6 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
     let bits_per_sample = spec.bits_per_sample;
 
     let samples = match sample_format {
-        hound::SampleForma
+        hound::SampleFormat::Float => reader
+            .into_samples::<f32>()
+            .filter_map(|result_sample| result_sample.ok()) // Convert Result<f32, hound::Error> to Opti
