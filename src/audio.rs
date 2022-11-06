@@ -21,4 +21,8 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
 
     // Depending on the sample format, process the samples differently
     let spec = reader.spec();
-    let sample_f
+    let sample_format = spec.sample_format;
+    let bits_per_sample = spec.bits_per_sample;
+
+    let samples = match sample_format {
+        hound::SampleForma
