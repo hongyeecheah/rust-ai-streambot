@@ -27,4 +27,8 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
     let samples = match sample_format {
         hound::SampleFormat::Float => reader
             .into_samples::<f32>()
-            .filter_map(|result_sample| result_sample.ok()) // Convert Result<f32, hound::Error> to Opti
+            .filter_map(|result_sample| result_sample.ok()) // Convert Result<f32, hound::Error> to Option<f32>, and then filter_map will filter out the None values
+            .collect(),
+
+        hound::SampleFormat::Int => match bits_per_sample {
+            16
