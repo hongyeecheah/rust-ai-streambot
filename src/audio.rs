@@ -31,4 +31,6 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
             .collect(),
 
         hound::SampleFormat::Int => match bits_per_sample {
-            16
+            16 => reader
+                .into_samples::<i16>()
+                .filter_map(|result_sample| result_sample.ok()) // Convert Result<i16, hound::Error> to 
