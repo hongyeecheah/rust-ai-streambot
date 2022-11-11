@@ -38,4 +38,6 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
                 .collect(),
 
             24 => reader
-                .i
+                .into_samples::<i32>()
+                .filter_map(|result_sample| result_sample.ok()) // Convert Result<i32, hound::Error> to Option<i32>
+             
