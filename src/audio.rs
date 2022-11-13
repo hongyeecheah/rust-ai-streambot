@@ -40,4 +40,7 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
             24 => reader
                 .into_samples::<i32>()
                 .filter_map(|result_sample| result_sample.ok()) // Convert Result<i32, hound::Error> to Option<i32>
-             
+                .map(|sample| (sample >> 8) as f32 / i16::MAX as f32) // Shift and normalize for 24-bit stored in i32
+                .collect(),
+
+            // In case of an unsupporte
