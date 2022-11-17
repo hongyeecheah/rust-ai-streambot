@@ -43,4 +43,13 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
                 .map(|sample| (sample >> 8) as f32 / i16::MAX as f32) // Shift and normalize for 24-bit stored in i32
                 .collect(),
 
-            // In case of an unsupporte
+            // In case of an unsupported bit depth, return an empty vector
+            _ => Vec::new(),
+        },
+    };
+
+    Ok(samples)
+}
+
+pub fn mp3_to_f32(mp3_data: Vec<u8>) -> Result<Vec<f32>> {
+    let curso
