@@ -52,4 +52,8 @@ pub fn wav_to_f32(wav_data: Vec<u8>) -> Result<Vec<f32>> {
 }
 
 pub fn mp3_to_f32(mp3_data: Vec<u8>) -> Result<Vec<f32>> {
-    let curso
+    let cursor = Cursor::new(mp3_data);
+    let mut decoder = Decoder::new(cursor);
+    let mut samples_f32 = Vec::new();
+
+    while let Ok(Frame { data, .. }) = decoder.next_frame() {
