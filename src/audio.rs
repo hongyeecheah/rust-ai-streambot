@@ -57,3 +57,6 @@ pub fn mp3_to_f32(mp3_data: Vec<u8>) -> Result<Vec<f32>> {
     let mut samples_f32 = Vec::new();
 
     while let Ok(Frame { data, .. }) = decoder.next_frame() {
+        for &sample in &data {
+            // Convert each sample to f32; MP3 samples are typically s16.
+            // Normalize the s16 sample to the range [
