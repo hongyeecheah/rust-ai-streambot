@@ -59,4 +59,11 @@ pub fn mp3_to_f32(mp3_data: Vec<u8>) -> Result<Vec<f32>> {
     while let Ok(Frame { data, .. }) = decoder.next_frame() {
         for &sample in &data {
             // Convert each sample to f32; MP3 samples are typically s16.
-            // Normalize the s16 sample to the range [
+            // Normalize the s16 sample to the range [-1.0, 1.0].
+            let sample_f32 = sample as f32 / i16::MAX as f32;
+            samples_f32.push(sample_f32);
+        }
+    }
+
+    Ok(samples_f32)
+}
