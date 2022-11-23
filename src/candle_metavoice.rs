@@ -13,4 +13,8 @@ use std::io::Cursor;
 #[cfg(feature = "metavoice")]
 use std::io::Write;
 
-#[cfg(feature = "m
+#[cfg(feature = "metavoice")]
+use candle_transformers::generation::LogitsProcessor;
+#[cfg(feature = "metavoice")]
+use candle_transformers::models::encodec;
+#[cfg(feature = 
