@@ -17,4 +17,7 @@ use std::io::Write;
 use candle_transformers::generation::LogitsProcessor;
 #[cfg(feature = "metavoice")]
 use candle_transformers::models::encodec;
-#[cfg(feature = 
+#[cfg(feature = "metavoice")]
+use candle_transformers::models::metavoice::{adapters, gpt, tokenizers, transformer};
+#[cfg(feature = "metavoice")]
+use candle_transform
