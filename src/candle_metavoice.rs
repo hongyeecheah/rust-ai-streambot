@@ -20,4 +20,8 @@ use candle_transformers::models::encodec;
 #[cfg(feature = "metavoice")]
 use candle_transformers::models::metavoice::{adapters, gpt, tokenizers, transformer};
 #[cfg(feature = "metavoice")]
-use candle_transform
+use candle_transformers::models::quantized_metavoice::transformer as qtransformer;
+
+#[cfg(feature = "metavoice")]
+use candle_core::{DType, IndexOp, Tensor};
+#[cfg(feature =
