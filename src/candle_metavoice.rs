@@ -24,4 +24,10 @@ use candle_transformers::models::quantized_metavoice::transformer as qtransforme
 
 #[cfg(feature = "metavoice")]
 use candle_core::{DType, IndexOp, Tensor};
-#[cfg(feature =
+#[cfg(feature = "metavoice")]
+use candle_nn::VarBuilder;
+#[cfg(feature = "metavoice")]
+use hf_hub::api::sync::Api;
+#[cfg(feature = "metavoice")]
+use rand::Rng;
+#[cfg(feature = "m
