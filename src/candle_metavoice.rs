@@ -30,4 +30,10 @@ use candle_nn::VarBuilder;
 use hf_hub::api::sync::Api;
 #[cfg(feature = "metavoice")]
 use rand::Rng;
-#[cfg(feature = "m
+#[cfg(feature = "metavoice")]
+use rand::{distributions::Distribution, SeedableRng};
+
+pub const ENCODEC_NTOKENS: u32 = 1024;
+
+#[cfg(feature = "metavoice")]
+enum Transformer 
