@@ -36,4 +36,11 @@ use rand::{distributions::Distribution, SeedableRng};
 pub const ENCODEC_NTOKENS: u32 = 1024;
 
 #[cfg(feature = "metavoice")]
-enum Transformer 
+enum Transformer {
+    Normal(transformer::Model),
+    Quantized(qtransformer::Model),
+}
+
+#[cfg(feature = "metavoice")]
+pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
+    use tracing_chrome:
