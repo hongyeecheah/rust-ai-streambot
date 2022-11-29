@@ -43,4 +43,10 @@ enum Transformer {
 
 #[cfg(feature = "metavoice")]
 pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
-    use tracing_chrome:
+    use tracing_chrome::ChromeLayerBuilder;
+    use tracing_subscriber::prelude::*;
+
+    let show_status = false;
+    let tracing = false;
+    let cpu = false;
+    let guidance_scale = 3.
