@@ -49,4 +49,9 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let show_status = false;
     let tracing = false;
     let cpu = false;
-    let guidance_scale = 3.
+    let guidance_scale = 3.0;
+    let temperature = 1.0;
+    // Override seed for now
+    let mut seed: Option<u64> = Some(299792458);
+    let max_tokens = 2000;
+    let first_sta
