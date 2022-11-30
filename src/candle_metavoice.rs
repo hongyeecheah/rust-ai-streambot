@@ -54,4 +54,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     // Override seed for now
     let mut seed: Option<u64> = Some(299792458);
     let max_tokens = 2000;
-    let first_sta
+    let first_stage_meta: Option<String> = None;
+    let first_stage_weights: Option<String> = None;
+    let second_stage_weights: Option<String> = None;
+    let en
