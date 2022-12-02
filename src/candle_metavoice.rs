@@ -57,4 +57,10 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let first_stage_meta: Option<String> = None;
     let first_stage_weights: Option<String> = None;
     let second_stage_weights: Option<String> = None;
-    let en
+    let encodec_weights: Option<String> = None;
+    let spk_emb: Option<String> = None;
+    let dtype = DType::F32;
+    let quantized = true;
+
+    if seed.is_none() {
+        see
