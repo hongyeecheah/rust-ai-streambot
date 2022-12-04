@@ -63,4 +63,9 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let quantized = true;
 
     if seed.is_none() {
-        see
+        seed = Some(rand::random());
+    }
+
+    let _guard = if tracing {
+        let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
+        tracing_subscriber::registry().with
