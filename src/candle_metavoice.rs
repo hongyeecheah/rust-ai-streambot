@@ -76,4 +76,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
 
     let device = candle_examples::device(cpu)?;
     let api = Api::new()?;
-    
+    let repo = api.model("lmz/candle-metavoice".to_string());
+    let first_stage_meta = match &first_stage_meta {
+        Some(w) => std::path::Pa
