@@ -68,4 +68,12 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
 
     let _guard = if tracing {
         let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
-        tracing_subscriber::registry().with
+        tracing_subscriber::registry().with(chrome_layer).init();
+        Some(guard)
+    } else {
+        None
+    };
+
+    let device = candle_examples::device(cpu)?;
+    let api = Api::new()?;
+    
