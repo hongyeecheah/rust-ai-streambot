@@ -82,4 +82,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         None => repo.get("first_stage.meta.json")?,
     };
     let first_stage_meta: serde_json::Value =
-        serde_json::from_re
+        serde_json::from_reader(&std::fs::File::open(first_stage_meta)?)?;
+    let first_stage_tokenizer = match first_stage_meta.as_object() {
+        None => anyhow::bail!("no
