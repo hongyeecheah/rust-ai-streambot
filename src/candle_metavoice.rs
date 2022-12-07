@@ -78,4 +78,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let api = Api::new()?;
     let repo = api.model("lmz/candle-metavoice".to_string());
     let first_stage_meta = match &first_stage_meta {
-        Some(w) => std::path::Pa
+        Some(w) => std::path::PathBuf::from(w),
+        None => repo.get("first_stage.meta.json")?,
+    };
+    let first_stage_meta: serde_json::Value =
+        serde_json::from_re
