@@ -84,4 +84,10 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let first_stage_meta: serde_json::Value =
         serde_json::from_reader(&std::fs::File::open(first_stage_meta)?)?;
     let first_stage_tokenizer = match first_stage_meta.as_object() {
-        None => anyhow::bail!("no
+        None => anyhow::bail!("not a json object"),
+        Some(j) => match j.get("tokenizer") {
+            None => anyhow::bail!("no tokenizer key"),
+            Some(j) => j,
+        },
+    };
+    let f
