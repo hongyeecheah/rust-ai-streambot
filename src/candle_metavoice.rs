@@ -90,4 +90,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
             Some(j) => j,
         },
     };
-    let f
+    let fs_tokenizer = tokenizers::BPE::from_json(first_stage_tokenizer, 512)?;
+
+    let second_stage_weights = match &second_stage_weights {
+     
