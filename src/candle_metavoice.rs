@@ -97,4 +97,9 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         None => repo.get("second_stage.safetensors")?,
     };
     let encodec_weights = match encodec_weights {
-      
+        Some(w) => std::path::PathBuf::from(w),
+        None => Api::new()?
+            .model("facebook/encodec_24khz".to_string())
+            .get("model.safetensors")?,
+    };
+    let f
