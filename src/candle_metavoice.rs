@@ -93,4 +93,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let fs_tokenizer = tokenizers::BPE::from_json(first_stage_tokenizer, 512)?;
 
     let second_stage_weights = match &second_stage_weights {
-     
+        Some(w) => std::path::PathBuf::from(w),
+        None => repo.get("second_stage.safetensors")?,
+    };
+    let encodec_weights = match encodec_weights {
+      
