@@ -105,4 +105,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let first_stage_config = transformer::Config::cfg1b_v0_1();
     let mut first_stage_model = if quantized {
         let filename = match &first_stage_weights {
-            S
+            Some(w) => std::path::PathBuf::from(w),
+            None => repo.get("first_stage_q4k.gguf")?,
+        };
+        let vb =
+            candle_transformers::
