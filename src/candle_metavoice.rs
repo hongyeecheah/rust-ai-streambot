@@ -109,4 +109,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
             None => repo.get("first_stage_q4k.gguf")?,
         };
         let vb =
-            candle_transformers::
+            candle_transformers::quantized_var_builder::VarBuilder::from_gguf(filename, &device)?;
+        let first_stage_model = qtransformer::Model::new(&first_stage_config, vb)?;
+        Transformer:
