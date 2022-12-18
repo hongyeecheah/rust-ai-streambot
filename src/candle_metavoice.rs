@@ -111,4 +111,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         let vb =
             candle_transformers::quantized_var_builder::VarBuilder::from_gguf(filename, &device)?;
         let first_stage_model = qtransformer::Model::new(&first_stage_config, vb)?;
-        Transformer:
+        Transformer::Quantized(first_stage_model)
+    } else {
+        let first_stage_weights = match &first_stage_weights {
+            Some(w) => std::path::PathBuf::fro
