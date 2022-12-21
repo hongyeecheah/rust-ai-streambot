@@ -114,4 +114,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         Transformer::Quantized(first_stage_model)
     } else {
         let first_stage_weights = match &first_stage_weights {
-            Some(w) => std::path::PathBuf::fro
+            Some(w) => std::path::PathBuf::from(w),
+            None => repo.get("first_stage.safetensors")?,
+        };
+        let first_stage_vb =
+            unsafe { VarBuilder::from_mmaped_safetensors(
