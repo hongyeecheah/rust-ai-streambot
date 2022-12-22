@@ -125,4 +125,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
 
     let second_stage_vb =
         unsafe { VarBuilder::from_mmaped_safetensors(&[second_stage_weights], dtype, &device)? };
-    le
+    let second_stage_config = gpt::Config::cfg1b_v0_1();
+    let second_stage_model = gpt::Model::new(second_stage_config.clone(), second_stage_vb)?;
+
+    let encodec_device 
