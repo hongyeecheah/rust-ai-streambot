@@ -120,4 +120,9 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         let first_stage_vb =
             unsafe { VarBuilder::from_mmaped_safetensors(&[first_stage_weights], dtype, &device)? };
         let first_stage_model = transformer::Model::new(&first_stage_config, first_stage_vb)?;
-        Transformer::Nor
+        Transformer::Normal(first_stage_model)
+    };
+
+    let second_stage_vb =
+        unsafe { VarBuilder::from_mmaped_safetensors(&[second_stage_weights], dtype, &device)? };
+    le
