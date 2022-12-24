@@ -134,4 +134,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         &device
     };
     let encodec_vb =
-        unsafe { VarBuilder::f
+        unsafe { VarBuilder::from_mmaped_safetensors(&[encodec_weights], dtype, encodec_device)? };
+    let encodec_config = encodec::Config::default();
+    let encodec_model = encodec::Model::new(&encodec_config, encodec_vb)?;
+
+ 
