@@ -128,4 +128,10 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let second_stage_config = gpt::Config::cfg1b_v0_1();
     let second_stage_model = gpt::Model::new(second_stage_config.clone(), second_stage_vb)?;
 
-    let encodec_device 
+    let encodec_device = if device.is_metal() {
+        &candle_core::Device::Cpu
+    } else {
+        &device
+    };
+    let encodec_vb =
+        unsafe { VarBuilder::f
