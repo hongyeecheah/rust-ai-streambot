@@ -138,4 +138,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let encodec_config = encodec::Config::default();
     let encodec_model = encodec::Model::new(&encodec_config, encodec_vb)?;
 
- 
+    log::debug!("prompt: '{}'", prompt);
+    let prompt_tokens = fs_tokenizer.encode(&prompt)?;
+    let mut tokens = prompt_tokens.clone();
+    log::debug!("{tokens:?}");
+    le
