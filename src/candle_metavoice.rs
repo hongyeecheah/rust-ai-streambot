@@ -142,4 +142,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let prompt_tokens = fs_tokenizer.encode(&prompt)?;
     let mut tokens = prompt_tokens.clone();
     log::debug!("{tokens:?}");
-    le
+    let spk_emb_file = match &spk_emb {
+        Some(w) => std::path::PathBuf::from(w),
+        None => repo.get("spk_emb.safetensors")?,
+    };
+    let spk_emb = cand
