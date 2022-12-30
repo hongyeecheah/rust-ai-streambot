@@ -146,4 +146,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         Some(w) => std::path::PathBuf::from(w),
         None => repo.get("spk_emb.safetensors")?,
     };
-    let spk_emb = cand
+    let spk_emb = candle_core::safetensors::load(&spk_emb_file, &candle_core::Device::Cpu)?;
+    let spk_emb = match spk_emb.get("spk_emb") {
+        None => anyhow::bail!("missing spk_emb tensor in {spk
