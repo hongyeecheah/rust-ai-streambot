@@ -148,4 +148,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     };
     let spk_emb = candle_core::safetensors::load(&spk_emb_file, &candle_core::Device::Cpu)?;
     let spk_emb = match spk_emb.get("spk_emb") {
-        None => anyhow::bail!("missing spk_emb tensor in {spk
+        None => anyhow::bail!("missing spk_emb tensor in {spk_emb_file:?}"),
+        Some(spk_emb) => spk_emb.to_dtype(dtype)?,
+    };
+    let spk_emb = spk_emb.to_device(&device)?;
+    let seed_u64 = seed.unwrap_or_else(|| rand::t
