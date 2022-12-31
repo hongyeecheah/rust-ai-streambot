@@ -152,4 +152,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         Some(spk_emb) => spk_emb.to_dtype(dtype)?,
     };
     let spk_emb = spk_emb.to_device(&device)?;
-    let seed_u64 = seed.unwrap_or_else(|| rand::t
+    let seed_u64 = seed.unwrap_or_else(|| rand::thread_rng().gen());
+    let mut logits_processor = LogitsProcessor::new(seed_u64, Some(temperature), Some(0.95));
+
+    // First stage generat
