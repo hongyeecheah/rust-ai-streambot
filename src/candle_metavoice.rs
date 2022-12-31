@@ -155,4 +155,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let seed_u64 = seed.unwrap_or_else(|| rand::thread_rng().gen());
     let mut logits_processor = LogitsProcessor::new(seed_u64, Some(temperature), Some(0.95));
 
-    // First stage generat
+    // First stage generation.
+    for index in 0..max_tokens {
+        let context_size = if index > 0 { 1 } else { tokens.len() };
+        let start_pos = tokens.len().sa
