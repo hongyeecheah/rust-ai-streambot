@@ -158,4 +158,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     // First stage generation.
     for index in 0..max_tokens {
         let context_size = if index > 0 { 1 } else { tokens.len() };
-        let start_pos = tokens.len().sa
+        let start_pos = tokens.len().saturating_sub(context_size);
+        let ctxt = &tokens[start_pos..];
+        let input = Tensor::new(ctxt, &device)?;
+        let input = Tensor::stack(&[&in
