@@ -163,4 +163,9 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         let input = Tensor::new(ctxt, &device)?;
         let input = Tensor::stack(&[&input, &input], 0)?;
         let logits = match &mut first_stage_model {
-            Transformer::Normal(m) => m.forward(&input, &spk_emb, tokens.len()
+            Transformer::Normal(m) => m.forward(&input, &spk_emb, tokens.len() - context_size)?,
+            Transformer::Quantized(m) => {
+                m.forward(&input, &spk_emb, tokens.len() - context_size)?
+            }
+        };
+        let 
