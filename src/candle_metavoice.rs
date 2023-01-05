@@ -168,4 +168,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
                 m.forward(&input, &spk_emb, tokens.len() - context_size)?
             }
         };
-        let 
+        let logits0 = logits.i((0, 0))?;
+        let logits1 = logits.i((1, 0))?;
+        let logits = ((logits0 * guidance_scale)? + logits1 * (1. - guidance_scale))?;
+        let l
