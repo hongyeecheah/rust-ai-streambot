@@ -175,4 +175,11 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         let next_token = logits_processor.sample(&logits)?;
         tokens.push(next_token);
         if show_status {
-      
+            print!(".");
+        }
+        std::io::stdout().flush()?;
+        if next_token == 2048 {
+            break;
+        }
+    }
+    if show_status
