@@ -182,4 +182,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
             break;
         }
     }
-    if show_status
+    if show_status {
+        println!("");
+    }
+    let fie2c = adapters::FlattenedInterleavedEncodec2Codebook::new(ENCODEC_NTOKENS);
+    let (text_ids, ids1, ids2) = fie2c.decode(&t
