@@ -186,4 +186,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         println!("");
     }
     let fie2c = adapters::FlattenedInterleavedEncodec2Codebook::new(ENCODEC_NTOKENS);
-    let (text_ids, ids1, ids2) = fie2c.decode(&t
+    let (text_ids, ids1, ids2) = fie2c.decode(&tokens);
+    log::debug!("text ids len: {}", text_ids.len());
+    let mut rng = rand::rngs::StdRng::seed_from_u64(seed_u64 + 1337);
+    // TODO: Use the c
