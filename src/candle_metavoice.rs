@@ -191,4 +191,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let mut rng = rand::rngs::StdRng::seed_from_u64(seed_u64 + 1337);
     // TODO: Use the config rather than hardcoding the offset here.
     let encoded_text: Vec<_> = prompt_tokens.iter().map(|v| v - 1024).collect();
-    let mut hierarchies_i
+    let mut hierarchies_in1 =
+        [encoded_text.as_slice(), ids1.as_slice(), &[ENCODEC_NTOKENS]].concat();
+    let mut hierarchies_in2 = [
+        vec![ENCODEC_NTOKENS; encode
