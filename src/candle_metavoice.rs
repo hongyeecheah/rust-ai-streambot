@@ -189,4 +189,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let (text_ids, ids1, ids2) = fie2c.decode(&tokens);
     log::debug!("text ids len: {}", text_ids.len());
     let mut rng = rand::rngs::StdRng::seed_from_u64(seed_u64 + 1337);
-    // TODO: Use the c
+    // TODO: Use the config rather than hardcoding the offset here.
+    let encoded_text: Vec<_> = prompt_tokens.iter().map(|v| v - 1024).collect();
+    let mut hierarchies_i
