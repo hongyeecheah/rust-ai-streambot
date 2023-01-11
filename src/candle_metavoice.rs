@@ -194,4 +194,9 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let mut hierarchies_in1 =
         [encoded_text.as_slice(), ids1.as_slice(), &[ENCODEC_NTOKENS]].concat();
     let mut hierarchies_in2 = [
-        vec![ENCODEC_NTOKENS; encode
+        vec![ENCODEC_NTOKENS; encoded_text.len()].as_slice(),
+        ids2.as_slice(),
+        &[ENCODEC_NTOKENS],
+    ]
+    .concat();
+    hierarchies_in1.resize(second_stage_config.block
