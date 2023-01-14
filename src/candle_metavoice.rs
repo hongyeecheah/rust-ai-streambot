@@ -199,4 +199,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         &[ENCODEC_NTOKENS],
     ]
     .concat();
-    hierarchies_in1.resize(second_stage_config.block
+    hierarchies_in1.resize(second_stage_config.block_size, ENCODEC_NTOKENS);
+    hierarchies_in2.resize(second_stage_config.block_size, ENCODEC_NTOKENS);
+    let in_x1 = Tensor::new(hierarchies_in1, 
