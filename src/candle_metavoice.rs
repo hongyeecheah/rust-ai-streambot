@@ -201,4 +201,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     .concat();
     hierarchies_in1.resize(second_stage_config.block_size, ENCODEC_NTOKENS);
     hierarchies_in2.resize(second_stage_config.block_size, ENCODEC_NTOKENS);
-    let in_x1 = Tensor::new(hierarchies_in1, 
+    let in_x1 = Tensor::new(hierarchies_in1, &device)?;
+    let in_x2 = Tensor::new(hierarchies_in2, &device)?;
+    let in_x = Tensor::stack(&[in_x1, in_x2], 0)?.unsqueeze(0)?;
+    let logits = second_stage_model.forw
