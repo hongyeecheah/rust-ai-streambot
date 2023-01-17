@@ -204,4 +204,9 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let in_x1 = Tensor::new(hierarchies_in1, &device)?;
     let in_x2 = Tensor::new(hierarchies_in2, &device)?;
     let in_x = Tensor::stack(&[in_x1, in_x2], 0)?.unsqueeze(0)?;
-    let logits = second_stage_model.forw
+    let logits = second_stage_model.forward(&in_x)?;
+    log::debug!("sampling from logits...");
+    let mut codes = vec![];
+    for logits in logits.iter() {
+        let logits = logits.squeeze(0)?;
+        let (seq_len,
