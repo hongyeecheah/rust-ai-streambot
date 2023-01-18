@@ -212,4 +212,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
         let (seq_len, _) = logits.dims2()?;
         let mut codes_ = Vec::with_capacity(seq_len);
         for step in 0..seq_len {
-            let logits = logits.i(step)
+            let logits = logits.i(step)?.to_dtype(DType::F32)?;
+            let logits = &(&logits / 1.0)?;
+            let prs = candle_nn::ops::softmax_last_dim(logits)?.to_vec1::<f32>()?;
+            let dis
