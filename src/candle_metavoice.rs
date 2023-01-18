@@ -209,4 +209,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let mut codes = vec![];
     for logits in logits.iter() {
         let logits = logits.squeeze(0)?;
-        let (seq_len,
+        let (seq_len, _) = logits.dims2()?;
+        let mut codes_ = Vec::with_capacity(seq_len);
+        for step in 0..seq_len {
+            let logits = logits.i(step)
