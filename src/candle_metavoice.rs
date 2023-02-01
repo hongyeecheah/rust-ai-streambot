@@ -218,4 +218,10 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
             let distr = rand::distributions::WeightedIndex::new(prs.as_slice())?;
             let sample = distr.sample(&mut rng) as u32;
             codes_.push(sample)
-      
+        }
+        codes.push(codes_)
+    }
+
+    let codes = Tensor::new(codes, &device)?.unsqueeze(0)?;
+    let codes = Tensor::cat(&[in_x, codes], 1)?;
+    lo
