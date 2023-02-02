@@ -224,4 +224,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
 
     let codes = Tensor::new(codes, &device)?.unsqueeze(0)?;
     let codes = Tensor::cat(&[in_x, codes], 1)?;
-    lo
+    log::debug!("codes: {codes}");
+    let tilted_encodec = adapters::TiltedEncodec::new(ENCODEC_NTOKENS);
+    let codes = codes.i(0)?.to_vec2::<u32>()?;
+    le
