@@ -229,4 +229,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let codes = codes.i(0)?.to_vec2::<u32>()?;
     let (text_ids, audio_ids) = tilted_encodec.decode(&codes);
     log::debug!("text_ids len: {:?}", text_ids.len());
-    let audio_ids = Tensor::new(audio_ids, encod
+    let audio_ids = Tensor::new(audio_ids, encodec_device)?.unsqueeze(0)?;
+    log::debug!("audio_ids shape: {:?}", audio_ids.shape());
+    let pcm = encodec_model.decode(&audio_ids)?;
+    log::debug!(
