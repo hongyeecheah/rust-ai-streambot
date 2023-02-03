@@ -227,4 +227,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     log::debug!("codes: {codes}");
     let tilted_encodec = adapters::TiltedEncodec::new(ENCODEC_NTOKENS);
     let codes = codes.i(0)?.to_vec2::<u32>()?;
-    le
+    let (text_ids, audio_ids) = tilted_encodec.decode(&codes);
+    log::debug!("text_ids len: {:?}", text_ids.len());
+    let audio_ids = Tensor::new(audio_ids, encod
