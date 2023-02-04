@@ -232,4 +232,6 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let audio_ids = Tensor::new(audio_ids, encodec_device)?.unsqueeze(0)?;
     log::debug!("audio_ids shape: {:?}", audio_ids.shape());
     let pcm = encodec_model.decode(&audio_ids)?;
-    log::debug!(
+    log::debug!("output pcm shape: {:?}", pcm.shape());
+    let pcm = pcm.i(0)?.i(0)?.to_dtype(DType::F32)?;
+    let pcm = candle_examples::audio::normalize_loudness(&pcm, 24_000, true
