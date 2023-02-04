@@ -234,4 +234,10 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     let pcm = encodec_model.decode(&audio_ids)?;
     log::debug!("output pcm shape: {:?}", pcm.shape());
     let pcm = pcm.i(0)?.i(0)?.to_dtype(DType::F32)?;
-    let pcm = candle_examples::audio::normalize_loudness(&pcm, 24_000, true
+    let pcm = candle_examples::audio::normalize_loudness(&pcm, 24_000, true)?;
+    let pcm = pcm.to_vec1::<f32>()?;
+
+    // Create a buffer to hold the WAV data
+    let mut buffer = Cursor::new(Vec::new());
+
+    // Write 
