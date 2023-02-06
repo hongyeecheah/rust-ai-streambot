@@ -244,3 +244,8 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     candle_examples::wav::write_pcm_as_wav(&mut buffer, &pcm, 24_000)?;
 
     // Get the buffer's content as Bytes
+    let bytes = buffer.into_inner().into();
+
+    // Return the Bytes containing the WAV data
+    Ok(bytes)
+}
