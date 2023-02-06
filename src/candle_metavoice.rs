@@ -240,4 +240,7 @@ pub async fn metavoice(prompt: String) -> Result<Bytes, Error> {
     // Create a buffer to hold the WAV data
     let mut buffer = Cursor::new(Vec::new());
 
-    // Write 
+    // Write the PCM data to the buffer as a WAV file
+    candle_examples::wav::write_pcm_as_wav(&mut buffer, &pcm, 24_000)?;
+
+    // Get the buffer's content as Bytes
