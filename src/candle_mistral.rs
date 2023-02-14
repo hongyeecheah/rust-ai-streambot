@@ -372,3 +372,7 @@ pub fn mistral(
                 break;
             }
         }
+    });
+
+    Ok(())
+}
