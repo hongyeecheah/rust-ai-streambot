@@ -208,3 +208,167 @@ impl TextGeneration {
                     self.repeat_penalty,
                     &tokens[start_at..],
                 )?
+            };
+
+            let next_token = self.logits_processor.sample(&logits)?;
+            tokens.push(next_token);
+            if next_token == eos_token {
+                break;
+            }
+            if let Some(t) = self.tokenizer.next_token(next_token)? {
+                self.internal_token_sender
+                    .send(t.clone())
+                    .await
+                    .expect("Failed to send token internally");
+            }
+        }
+
+        Ok(())
+    }
+}
+
+pub fn mistral(
+    prompt: String,
+    sample_len: usize,
+    temperature: f64,
+    quantized: bool,
+    model_id: Option<String>,
+    external_sender: Sender<String>,
+) -> Result<()> {
+    let cpu = false;
+    let tracing = false;
+    let use_flash_attn = false;
+    let top_p: Option<f64> = None;
+    let seed = rand::random();
+    let revision: String = "main".to_string();
+    let tokenizer_file: Option<String> = None;
+    let weight_files: Option<String> = None;
+    let repeat_penalty = 1.1;
+    let repeat_last_n = (sample_len / 4) + prompt.len();
+
+    let _guard = if tracing {
+        let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
+        tracing_subscriber::registry().with(chrome_layer).init();
+        Some(guard)
+    } else {
+        None
+    };
+    debug!(
+        "avx: {}, neon: {}, simd128: {}, f16c: {}",
+        candle_core::utils::with_avx(),
+        candle_core::utils::with_neon(),
+        candle_core::utils::with_simd128(),
+        candle_core::utils::with_f16c()
+    );
+    info!(
+        "temp: {:.2} repeat-penalty: {:.2} repeat-last-n: {}",
+        temperature, repeat_penalty, repeat_last_n
+    );
+
+    let start = std::time::Instant::now();
+    let api = Api::new()?;
+    let model_id = match &model_id {
+        Some(model_id) => {
+            if model_id.is_empty() || model_id.to_string() == "auto" {
+                if quantized {
+                    "lmz/candle-mistral".to_string()
+                } else {
+                    "mistralai/Mistral-7B-Instruct-v0.2".to_string()
+                }
+            } else if model_id.to_lowercase() == "7b-it" {
+                "mistralai/Mistral-7B-Instruct-v0.2".to_string()
+            } else if model_id.to_lowercase() == "7b" {
+                "mistralai/Mistral-7B-v0.1".to_string()
+            } else {
+                model_id.to_string()
+            }
+        }
+        None => {
+            if quantized {
+                "lmz/candle-mistral".to_string()
+            } else {
+                "mistralai/Mistral-7B-Instruct-v0.2".to_string()
+            }
+        }
+    };
+
+    let repo = api.repo(Repo::with_revision(model_id, RepoType::Model, revision));
+    let tokenizer_filename = match tokenizer_file {
+        Some(file) => std::path::PathBuf::from(file),
+        None => repo.get("tokenizer.json")?,
+    };
+    let filenames = match weight_files {
+        Some(files) => files
+            .split(',')
+            .map(std::path::PathBuf::from)
+            .collect::<Vec<_>>(),
+        None => {
+            if quantized {
+                vec![repo.get("model-q4k.gguf")?]
+            } else {
+                candle_examples::hub_load_safetensors(&repo, "model.safetensors.index.json")?
+            }
+        }
+    };
+    info!("retrieved the files in {:?}", start.elapsed());
+    let tokenizer = Tokenizer::from_file(tokenizer_filename).map_err(E::msg)?;
+
+    let start = std::time::Instant::now();
+    let config = Config::config_7b_v0_1(use_flash_attn);
+    let device = candle_examples::device(cpu)?;
+    let (model, device) = if quantized {
+        let filename = &filenames[0];
+        let vb =
+            candle_transformers::quantized_var_builder::VarBuilder::from_gguf(filename, &device)?;
+        let model = QMistral::new(&config, vb)?;
+        (Model::Quantized(model), device)
+    } else {
+        let dtype = if device.is_cuda() {
+            DType::BF16
+        } else {
+            DType::F32
+        };
+        let vb = unsafe { VarBuilder::from_mmaped_safetensors(&filenames, dtype, &device)? };
+        let model = Mistral::new(&config, vb)?;
+        (Model::Mistral(model), device)
+    };
+
+    info!("loaded the model in {:?}", start.elapsed());
+
+    let (internal_sender, mut internal_receiver) = mpsc::channel(32768);
+
+    // Pass both the internal and external senders to TextGeneration
+    let pipeline = TextGeneration::new(
+        model,
+        tokenizer,
+        seed,              // seed
+        Some(temperature), // temp
+        top_p,             // top_p
+        repeat_penalty,    // repeat_penalty
+        repeat_last_n,     // repeat_last_n
+        &device,
+        internal_sender,
+    );
+
+    let pipeline = Arc::new(Mutex::new(pipeline));
+
+    // Start the text generation in a separate thread
+    let pipeline_clone = pipeline.clone();
+    let prompt_clone = prompt.clone();
+    tokio::spawn(async move {
+        let mut pipeline = pipeline_clone.lock().await;
+        match pipeline.run(&prompt_clone, sample_len).await {
+            Ok(_) => {}
+            Err(e) => log::error!("Failed to run the pipeline: {}", e),
+        }
+    });
+
+    // Set up a thread to listen on the internal receiver and forward messages to the external sender
+    let external_sender_clone = external_sender.clone();
+    tokio::spawn(async move {
+        while let Some(token) = internal_receiver.recv().await {
+            if let Err(e) = external_sender_clone.send(token).await {
+                log::error!("Failed to send token externally: {}", e);
+                break;
+            }
+        }
