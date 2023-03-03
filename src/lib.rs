@@ -27,4 +27,11 @@ pub mod twitch_client;
 use serde_json::{json, Value};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-pub use system_stats::{get_system_st
+pub use system_stats::{get_system_stats, SystemStats};
+pub mod candle_gemma;
+use image::{
+    imageops::{resize, FilterType},
+    ImageBuffer, Rgb, Rgba,
+};
+#[cfg(feature = "fonts")]
+use im
