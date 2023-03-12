@@ -34,4 +34,11 @@ use image::{
     ImageBuffer, Rgb, Rgba,
 };
 #[cfg(feature = "fonts")]
-use im
+use imageproc::drawing::draw_text_mut;
+#[cfg(feature = "fonts")]
+use rusttype::{Font, Scale};
+use std::io::Write;
+
+#[derive(Debug)]
+pub enum ApiError {
+    E
