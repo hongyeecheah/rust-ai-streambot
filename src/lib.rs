@@ -47,4 +47,11 @@ pub enum ApiError {
 
 impl From<reqwest::Error> for ApiError {
     fn from(value: reqwest::Error) -> Self {
-        ApiError::RequestError(
+        ApiError::RequestError(value)
+    }
+}
+
+impl std::fmt::Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+        
