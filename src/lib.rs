@@ -41,4 +41,10 @@ use std::io::Write;
 
 #[derive(Debug)]
 pub enum ApiError {
-    E
+    Error(String),
+    RequestError(reqwest::Error),
+}
+
+impl From<reqwest::Error> for ApiError {
+    fn from(value: reqwest::Error) -> Self {
+        ApiError::RequestError(
