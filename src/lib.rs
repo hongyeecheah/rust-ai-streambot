@@ -60,4 +60,10 @@ impl std::fmt::Display for ApiError {
     }
 }
 
-/// Enu
+/// Enum to determine the type of stats to fetch.
+pub enum StatsType {
+    System,
+}
+
+/// Fetches the requested stats and returns them as a JSON Value.
+pub async fn get_sta
