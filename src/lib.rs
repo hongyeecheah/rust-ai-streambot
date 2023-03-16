@@ -54,4 +54,10 @@ impl From<reqwest::Error> for ApiError {
 impl std::fmt::Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-        
+            ApiError::Error(msg) => write!(f, "{}", msg),
+            ApiError::RequestError(e) => write!(f, "Request error: {}", e),
+        }
+    }
+}
+
+/// Enu
