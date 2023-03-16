@@ -66,4 +66,7 @@ pub enum StatsType {
 }
 
 /// Fetches the requested stats and returns them as a JSON Value.
-pub async fn get_sta
+pub async fn get_stats_as_json(stats_type: StatsType) -> Value {
+    match stats_type {
+        StatsType::System => {
+            let system_stats = get_sy
