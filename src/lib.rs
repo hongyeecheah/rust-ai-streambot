@@ -69,4 +69,11 @@ pub enum StatsType {
 pub async fn get_stats_as_json(stats_type: StatsType) -> Value {
     match stats_type {
         StatsType::System => {
-            let system_stats = get_sy
+            let system_stats = get_system_stats();
+            json!(system_stats)
+        }
+    }
+}
+
+// Function to get the current Unix timestamp in milliseconds
+pub fn current_unix_timestamp_ms() -> Re
