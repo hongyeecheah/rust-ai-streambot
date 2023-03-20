@@ -76,4 +76,8 @@ pub async fn get_stats_as_json(stats_type: StatsType) -> Value {
 }
 
 // Function to get the current Unix timestamp in milliseconds
-pub fn current_unix_timestamp_ms() -> Re
+pub fn current_unix_timestamp_ms() -> Result<u64, &'static str> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .map_err(|_| "Syste
