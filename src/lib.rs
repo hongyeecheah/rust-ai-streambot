@@ -96,4 +96,9 @@ pub fn hexdump(packet_arc: &Arc<Vec<u8>>, packet_offset: usize, packet_len: usiz
     }
     println!(
         "--- Packet Offset {} Packet Length {} ---\n{}\n---",
-        packet_offset, packet_len, packet_
+        packet_offset, packet_len, packet_dump
+    );
+}
+
+// return a string of the packet in hex plus ascii representation after each hex line (16 bytes) with a | delimiter
+pub fn hexdu
