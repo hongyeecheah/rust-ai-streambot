@@ -92,4 +92,8 @@ pub fn hexdump(packet_arc: &Arc<Vec<u8>>, packet_offset: usize, packet_len: usiz
         if i % 16 == 0 {
             packet_dump.push_str(&format!("\n{:04x}: ", i));
         }
-        packet_dump.push_str(
+        packet_dump.push_str(&format!("{:02x} ", chunk));
+    }
+    println!(
+        "--- Packet Offset {} Packet Length {} ---\n{}\n---",
+        packet_offset, packet_len, packet_
