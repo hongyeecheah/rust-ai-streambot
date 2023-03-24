@@ -88,4 +88,8 @@ pub fn hexdump(packet_arc: &Arc<Vec<u8>>, packet_offset: usize, packet_len: usiz
     let packet = &packet_arc[packet_offset..packet_offset + packet_len];
     // print in rows of 16 bytes
     let mut packet_dump = String::new();
-    for (i,
+    for (i, chunk) in packet.iter().take(packet_len).enumerate() {
+        if i % 16 == 0 {
+            packet_dump.push_str(&format!("\n{:04x}: ", i));
+        }
+        packet_dump.push_str(
