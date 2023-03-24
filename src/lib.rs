@@ -102,4 +102,7 @@ pub fn hexdump(packet_arc: &Arc<Vec<u8>>, packet_offset: usize, packet_len: usiz
 
 // return a string of the packet in hex plus ascii representation after each hex line (16 bytes) with a | delimiter
 pub fn hexdump_ascii(packet: &[u8], packet_offset: usize, packet_len: usize) -> String {
-    // Assuming packet_offset and packet_len are correctly calculated within th
+    // Assuming packet_offset and packet_len are correctly calculated within the slice's bounds
+    let packet = &packet[packet_offset..packet_offset + packet_len];
+    let mut packet_dump = String::new();
+    for (i, &chun
