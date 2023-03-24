@@ -109,4 +109,7 @@ pub fn hexdump_ascii(packet: &[u8], packet_offset: usize, packet_len: usize) -> 
         if i % 16 == 0 {
             packet_dump.push_str(&format!("\n{:04x}: ", i));
         }
-        packet_dump.push_s
+        packet_dump.push_str(&format!("{:02x} ", chunk));
+        if i % 16 == 15 || i == packet.len() - 1 {
+            // Adjust for last line
+            packet_dump.
