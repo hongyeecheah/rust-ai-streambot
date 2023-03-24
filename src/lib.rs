@@ -80,4 +80,9 @@ pub fn current_unix_timestamp_ms() -> Result<u64, &'static str> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
-        .map_err(|_| "Syste
+        .map_err(|_| "System time is before the UNIX epoch")
+}
+
+// Print a hexdump of the packet
+pub fn hexdump(packet_arc: &Arc<Vec<u8>>, packet_offset: usize, packet_len: usize) {
+    let pac
