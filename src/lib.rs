@@ -85,4 +85,7 @@ pub fn current_unix_timestamp_ms() -> Result<u64, &'static str> {
 
 // Print a hexdump of the packet
 pub fn hexdump(packet_arc: &Arc<Vec<u8>>, packet_offset: usize, packet_len: usize) {
-    let pac
+    let packet = &packet_arc[packet_offset..packet_offset + packet_len];
+    // print in rows of 16 bytes
+    let mut packet_dump = String::new();
+    for (i,
