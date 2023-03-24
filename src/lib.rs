@@ -105,4 +105,8 @@ pub fn hexdump_ascii(packet: &[u8], packet_offset: usize, packet_len: usize) -> 
     // Assuming packet_offset and packet_len are correctly calculated within the slice's bounds
     let packet = &packet[packet_offset..packet_offset + packet_len];
     let mut packet_dump = String::new();
-    for (i, &chun
+    for (i, &chunk) in packet.iter().enumerate() {
+        if i % 16 == 0 {
+            packet_dump.push_str(&format!("\n{:04x}: ", i));
+        }
+        packet_dump.push_s
