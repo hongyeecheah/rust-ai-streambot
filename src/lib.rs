@@ -115,4 +115,9 @@ pub fn hexdump_ascii(packet: &[u8], packet_offset: usize, packet_len: usize) -> 
             packet_dump.push_str(" | ");
             let start = if i % 16 == 15 { i - 15 } else { i / 16 * 16 };
             for &ch in &packet[start..=i] {
-                if ch >= 32 && ch <= 1
+                if ch >= 32 && ch <= 126 {
+                    packet_dump.push(ch as char);
+                } else {
+                    packet_dump.push('.');
+                }
+   
