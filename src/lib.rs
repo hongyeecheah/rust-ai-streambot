@@ -112,4 +112,7 @@ pub fn hexdump_ascii(packet: &[u8], packet_offset: usize, packet_len: usize) -> 
         packet_dump.push_str(&format!("{:02x} ", chunk));
         if i % 16 == 15 || i == packet.len() - 1 {
             // Adjust for last line
-            packet_dump.
+            packet_dump.push_str(" | ");
+            let start = if i % 16 == 15 { i - 15 } else { i / 16 * 16 };
+            for &ch in &packet[start..=i] {
+                if ch >= 32 && ch <= 1
