@@ -120,4 +120,12 @@ pub fn hexdump_ascii(packet: &[u8], packet_offset: usize, packet_len: usize) -> 
                 } else {
                     packet_dump.push('.');
                 }
-   
+            }
+        }
+    }
+    packet_dump
+}
+
+/// Remove all caps from the provided string.
+pub fn adjust_caps(paragraph: &str) -> String {
+  
