@@ -128,4 +128,10 @@ pub fn hexdump_ascii(packet: &[u8], packet_offset: usize, packet_len: usize) -> 
 
 /// Remove all caps from the provided string.
 pub fn adjust_caps(paragraph: &str) -> String {
-  
+    paragraph
+        .split_whitespace()
+        .map(|word| {
+            let mut c = word.chars();
+            match c.next() {
+                None => String::new(),
+                S
