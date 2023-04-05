@@ -134,4 +134,9 @@ pub fn adjust_caps(paragraph: &str) -> String {
             let mut c = word.chars();
             match c.next() {
                 None => String::new(),
-                S
+                Some(f) => {
+                    f.to_uppercase().collect::<String>() + c.as_str().to_lowercase().as_str()
+                }
+            }
+        })
+        .collect::<Vec<Str
