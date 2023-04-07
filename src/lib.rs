@@ -139,4 +139,9 @@ pub fn adjust_caps(paragraph: &str) -> String {
                 }
             }
         })
-        .collect::<Vec<Str
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
+/// Modifies the provided string if it exceeds 80 characters, splitting it according to specified delimiters,
+/// and updates the `terminal_to
