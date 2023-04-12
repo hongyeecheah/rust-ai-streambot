@@ -144,4 +144,9 @@ pub fn adjust_caps(paragraph: &str) -> String {
 }
 
 /// Modifies the provided string if it exceeds 80 characters, splitting it according to specified delimiters,
-/// and updates the `terminal_to
+/// and updates the `terminal_token_len` based on the operation performed.
+///
+/// # Arguments
+///
+/// * `received` - The string to potentially modify.
+/// * `terminal_token_len` - The curre
