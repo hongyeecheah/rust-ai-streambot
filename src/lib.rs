@@ -156,4 +156,7 @@ pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
 
         // Initialize split position to the end of the string by default
         let mut split_pos = received.len();
-        
+        let mut found = false;
+        for delimiter in ['\n', '.', ',', '?', '!'] {
+            if let Some(pos) = received.find(delimiter) {
+                // Ad
