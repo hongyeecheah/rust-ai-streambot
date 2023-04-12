@@ -149,4 +149,7 @@ pub fn adjust_caps(paragraph: &str) -> String {
 /// # Arguments
 ///
 /// * `received` - The string to potentially modify.
-/// * `terminal_token_len` - The curre
+/// * `terminal_token_len` - The current length of the terminal token, to be updated.
+pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
+    if *terminal_token_len >= 80 {
+      
