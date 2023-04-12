@@ -152,4 +152,8 @@ pub fn adjust_caps(paragraph: &str) -> String {
 /// * `terminal_token_len` - The current length of the terminal token, to be updated.
 pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
     if *terminal_token_len >= 80 {
-      
+        std::io::stdout().flush().unwrap();
+
+        // Initialize split position to the end of the string by default
+        let mut split_pos = received.len();
+        
