@@ -160,4 +160,10 @@ pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
         for delimiter in ['\n', '.', ',', '?', '!'] {
             if let Some(pos) = received.find(delimiter) {
                 // Adjust position to keep the delimiter with the first part, except for '\n'
-                let end_pos = if delimiter == '\n' { pos } else
+                let end_pos = if delimiter == '\n' { pos } else { pos + 1 };
+                split_pos = split_pos.min(end_pos);
+                found = true;
+                break;
+            }
+        }
+        if split_pos == received.len(
