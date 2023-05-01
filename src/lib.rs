@@ -166,4 +166,7 @@ pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
                 break;
             }
         }
-        if split_pos == received.len(
+        if split_pos == received.len() {
+            if let Some(pos) = received.find(' ') {
+                // Adjust position to keep the delimiter with the first part, except for '\n'
+              
