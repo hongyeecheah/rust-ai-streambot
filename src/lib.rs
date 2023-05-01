@@ -178,4 +178,8 @@ pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
         if found {
             let (first, second) = received.split_at(split_pos);
             print!("{}\n{}", first, second); // Use println! for simplicity to handle the newline
-            *termin
+            *terminal_token_len = 0; //second.len(); // Update terminal_token_len with the length of the second part
+        } else {
+            print!("{}", received);
+        }
+  
