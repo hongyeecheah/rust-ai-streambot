@@ -196,4 +196,8 @@ pub fn truncate_tokens(text: &str, max_tokens: usize) -> String {
     let mut tokens: Vec<String> = Vec::new();
     for token in text.split_whitespace() {
         if token.len() <= 4 {
-            tokens.push(token
+            tokens.push(token.to_string());
+        } else {
+            let token_chars: Vec<char> = token.chars().collect();
+            let chunks = token_chars.chunks(4);
+            fo
