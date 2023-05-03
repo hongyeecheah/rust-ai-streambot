@@ -207,4 +207,11 @@ pub fn truncate_tokens(text: &str, max_tokens: usize) -> String {
         }
     }
 
-    if tokens.len()
+    if tokens.len() <= max_tokens {
+        text.to_string()
+    } else {
+        tokens[..max_tokens].join(" ")
+    }
+}
+
+pub fn count_tokens(text: &str) -> usize
