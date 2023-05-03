@@ -189,4 +189,6 @@ pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
     }
 }
 
-/// Truncate the input te
+/// Truncate the input text to the specified number of tokens.
+/// If the number of tokens in the input text is less than or equal to the specified number of tokens,
+/// the inp
