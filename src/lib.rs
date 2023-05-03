@@ -200,4 +200,11 @@ pub fn truncate_tokens(text: &str, max_tokens: usize) -> String {
         } else {
             let token_chars: Vec<char> = token.chars().collect();
             let chunks = token_chars.chunks(4);
-            fo
+            for chunk in chunks {
+                let chunk_str: String = chunk.iter().collect();
+                tokens.push(chunk_str);
+            }
+        }
+    }
+
+    if tokens.len()
