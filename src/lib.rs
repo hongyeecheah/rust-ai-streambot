@@ -182,4 +182,11 @@ pub fn handle_long_string(received: &str, terminal_token_len: &mut usize) {
         } else {
             print!("{}", received);
         }
-  
+        std::io::stdout().flush().unwrap();
+    } else {
+        print!("{}", received);
+        std::io::stdout().flush().unwrap();
+    }
+}
+
+/// Truncate the input te
