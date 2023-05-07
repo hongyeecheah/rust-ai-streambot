@@ -214,4 +214,10 @@ pub fn truncate_tokens(text: &str, max_tokens: usize) -> String {
     }
 }
 
-pub fn count_tokens(text: &str) -> usize
+pub fn count_tokens(text: &str) -> usize {
+    let mut token_count = 0;
+    for token in text.split_whitespace() {
+        if token.len() <= 4 {
+            token_count += 1;
+        } else {
+            let tok
