@@ -220,4 +220,9 @@ pub fn count_tokens(text: &str) -> usize {
         if token.len() <= 4 {
             token_count += 1;
         } else {
-            let tok
+            let token_chars: Vec<char> = token.chars().collect();
+            let chunks = token_chars.chunks(4);
+            token_count += chunks.len();
+        }
+    }
+   
