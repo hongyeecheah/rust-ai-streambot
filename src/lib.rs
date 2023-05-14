@@ -225,4 +225,9 @@ pub fn count_tokens(text: &str) -> usize {
             token_count += chunks.len();
         }
     }
-   
+    token_count
+}
+
+// Helper function to wrap text into lines
+#[cfg(feature = "fonts")]
+pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_widt
