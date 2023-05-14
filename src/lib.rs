@@ -230,4 +230,7 @@ pub fn count_tokens(text: &str) -> usize {
 
 // Helper function to wrap text into lines
 #[cfg(feature = "fonts")]
-pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_widt
+pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut current_line = String::new();
+    let space_width = font.glyph(' ').scaled(scale).h_metri
