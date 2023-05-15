@@ -233,4 +233,9 @@ pub fn count_tokens(text: &str) -> usize {
 pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -> Vec<String> {
     let mut lines = Vec::new();
     let mut current_line = String::new();
-    let space_width = font.glyph(' ').scaled(scale).h_metri
+    let space_width = font.glyph(' ').scaled(scale).h_metrics().advance_width;
+
+    for word in text.split_whitespace() {
+        let word_width = word
+            .chars()
+            .map(|c| font.glyph(c).scaled(scale).h_metri
