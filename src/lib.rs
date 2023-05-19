@@ -246,4 +246,11 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
             if !current_line.is_empty() {
                 current_line.push(' ');
             }
-            current_line.push_str(
+            current_line.push_str(word);
+        } else {
+            lines.push(current_line);
+            current_line = String::from(word);
+        }
+    }
+
+    // go through lines and 
