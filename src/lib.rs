@@ -241,4 +241,9 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
             .map(|c| font.glyph(c).scaled(scale).h_metrics().advance_width)
             .sum::<f32>();
         if current_line.is_empty()
-            || text_width(&current_line, font, scale) + space_width + wo
+            || text_width(&current_line, font, scale) + space_width + word_width <= max_width as f32
+        {
+            if !current_line.is_empty() {
+                current_line.push(' ');
+            }
+            current_line.push_str(
