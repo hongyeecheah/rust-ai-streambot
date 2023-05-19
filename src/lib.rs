@@ -238,4 +238,7 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
     for word in text.split_whitespace() {
         let word_width = word
             .chars()
-            .map(|c| font.glyph(c).scaled(scale).h_metri
+            .map(|c| font.glyph(c).scaled(scale).h_metrics().advance_width)
+            .sum::<f32>();
+        if current_line.is_empty()
+            || text_width(&current_line, font, scale) + space_width + wo
