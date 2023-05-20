@@ -254,4 +254,8 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
     }
 
     // go through lines and break any that exceed our max length into smaller lines and adjust proceeding lines
-    // force break without wrap_text function since we are not breaki
+    // force break without wrap_text function since we are not breaking by spaces but by characters instead
+    let mut i = 0;
+    while i < lines.len() {
+        let line = &lines[i];
+        if text_width(line, font, scale) > max_width 
