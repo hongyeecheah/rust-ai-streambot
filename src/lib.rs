@@ -258,4 +258,7 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
     let mut i = 0;
     while i < lines.len() {
         let line = &lines[i];
-        if text_width(line, font, scale) > max_width 
+        if text_width(line, font, scale) > max_width as f32 {
+            // break line into smaller lines by character not by spaces
+            let mut new_lines = Vec::new();
+            let mut curr
