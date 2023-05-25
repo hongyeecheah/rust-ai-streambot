@@ -261,4 +261,7 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
         if text_width(line, font, scale) > max_width as f32 {
             // break line into smaller lines by character not by spaces
             let mut new_lines = Vec::new();
-            let mut curr
+            let mut current_line = String::new();
+            for c in line.chars() {
+                let char_width = font.glyph(c).scaled(scale).h_metrics().advance_width;
+              
