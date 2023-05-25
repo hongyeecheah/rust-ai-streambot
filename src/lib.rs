@@ -264,4 +264,7 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
             let mut current_line = String::new();
             for c in line.chars() {
                 let char_width = font.glyph(c).scaled(scale).h_metrics().advance_width;
-              
+                if text_width(&current_line, font, scale) + char_width <= max_width as f32 {
+                    current_line.push(c);
+                } else {
+                 
