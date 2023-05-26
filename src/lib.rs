@@ -275,4 +275,13 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
         i += 1;
     }
 
-    if !
+    if !current_line.is_empty() {
+        lines.push(current_line);
+    }
+
+    lines
+}
+
+// Helper function to calculate text width
+#[cfg(feature = "fonts")]
+pub fn tex
