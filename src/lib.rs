@@ -267,4 +267,12 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
                 if text_width(&current_line, font, scale) + char_width <= max_width as f32 {
                     current_line.push(c);
                 } else {
-                 
+                    new_lines.push(current_line);
+                    current_line = String::from(c);
+                }
+            }
+        }
+        i += 1;
+    }
+
+    if !
