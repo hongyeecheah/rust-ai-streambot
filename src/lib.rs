@@ -284,4 +284,10 @@ pub fn wrap_text<'a>(text: &'a str, font: &Font, scale: Scale, max_width: i32) -
 
 // Helper function to calculate text width
 #[cfg(feature = "fonts")]
-pub fn tex
+pub fn text_width(text: &str, font: &Font, scale: Scale) -> f32 {
+    text.chars()
+        .map(|c| font.glyph(c).scaled(scale).h_metrics().advance_width)
+        .sum()
+}
+
+#[cfg(f
