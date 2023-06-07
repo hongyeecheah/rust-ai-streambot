@@ -290,4 +290,9 @@ pub fn text_width(text: &str, font: &Font, scale: Scale) -> f32 {
         .sum()
 }
 
-#[cfg(f
+#[cfg(feature = "fonts")]
+pub fn convert_rgb_to_rgba_with_text(
+    image_buffer: &ImageBuffer<Rgb<u8>, Vec<u8>>,
+    text: &str,
+    font_size: f32,
+    start_p
