@@ -295,4 +295,7 @@ pub fn convert_rgb_to_rgba_with_text(
     image_buffer: &ImageBuffer<Rgb<u8>, Vec<u8>>,
     text: &str,
     font_size: f32,
-    start_p
+    start_pos: (i32, i32),
+) -> Vec<u8> {
+    let font_data = include_bytes!("../fonts/TrebuchetMSBold.ttf");
+    let font = Font::try_from_bytes(font_
