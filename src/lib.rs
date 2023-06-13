@@ -302,4 +302,9 @@ pub fn convert_rgb_to_rgba_with_text(
 
     let mut image_rgba =
         ImageBuffer::from_fn(image_buffer.width(), image_buffer.height(), |x, y| {
-     
+            let pixel = image_buffer.get_pixel(x, y);
+            Rgba([pixel[0], pixel[1], pixel[2], 255])
+        });
+
+    let scale = Scale {
+        x: font_
