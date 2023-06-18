@@ -312,4 +312,8 @@ pub fn convert_rgb_to_rgba_with_text(
     };
     let text_color = Rgba([255, 255, 255, 0xff]);
     let shadow_color = Rgba([0, 0, 0, 255]);
-    let shadow_top_offset = 
+    let shadow_top_offset = 2; // Shadow offset in pixels
+    let shadow_bottom_offset = 4; // Shadow offset in pixels
+
+    // Draw bottom shadow
+    let wrapped_text_shadow = wrap_text(
