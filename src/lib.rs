@@ -307,4 +307,9 @@ pub fn convert_rgb_to_rgba_with_text(
         });
 
     let scale = Scale {
-        x: font_
+        x: font_size,
+        y: font_size,
+    };
+    let text_color = Rgba([255, 255, 255, 0xff]);
+    let shadow_color = Rgba([0, 0, 0, 255]);
+    let shadow_top_offset = 
