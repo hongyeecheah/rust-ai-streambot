@@ -333,4 +333,12 @@ pub fn convert_rgb_to_rgba_with_text(
             &font,
             line,
         );
-        current_height_bottom_sh
+        current_height_bottom_shadow += font_size as i32;
+    }
+
+    // Draw top shadow
+    let wrapped_text_shadow = wrap_text(
+        text,
+        &font,
+        scale,
+        image_buffer.width() as i32 
