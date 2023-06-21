@@ -351,4 +351,12 @@ pub fn convert_rgb_to_rgba_with_text(
             start_pos.0 - shadow_top_offset,
             current_height_top_shadow,
             scale,
-            &
+            &font,
+            line,
+        );
+        current_height_top_shadow += font_size as i32;
+    }
+
+    // Draw text
+    let wrapped_text = wrap_text(
+    
