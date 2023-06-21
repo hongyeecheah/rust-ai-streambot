@@ -327,4 +327,10 @@ pub fn convert_rgb_to_rgba_with_text(
         draw_text_mut(
             &mut image_rgba,
             shadow_color,
-            start_pos.0 + 
+            start_pos.0 + shadow_bottom_offset,
+            current_height_bottom_shadow,
+            scale,
+            &font,
+            line,
+        );
+        current_height_bottom_sh
