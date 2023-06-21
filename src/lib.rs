@@ -346,4 +346,9 @@ pub fn convert_rgb_to_rgba_with_text(
     let mut current_height_top_shadow = start_pos.1 - shadow_top_offset / 2;
     for line in &wrapped_text_shadow {
         draw_text_mut(
-       
+            &mut image_rgba,
+            shadow_color,
+            start_pos.0 - shadow_top_offset,
+            current_height_top_shadow,
+            scale,
+            &
