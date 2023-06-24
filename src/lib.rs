@@ -359,4 +359,10 @@ pub fn convert_rgb_to_rgba_with_text(
 
     // Draw text
     let wrapped_text = wrap_text(
-    
+        text,
+        &font,
+        scale,
+        image_buffer.width() as i32 - start_pos.0 * 2,
+    );
+    let mut current_height = start_pos.1;
+    for line in &wrappe
