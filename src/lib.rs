@@ -365,4 +365,12 @@ pub fn convert_rgb_to_rgba_with_text(
         image_buffer.width() as i32 - start_pos.0 * 2,
     );
     let mut current_height = start_pos.1;
-    for line in &wrappe
+    for line in &wrapped_text {
+        draw_text_mut(
+            &mut image_rgba,
+            text_color,
+            start_pos.0,
+            current_height,
+            scale,
+            &font,
+          
