@@ -381,4 +381,11 @@ pub fn convert_rgb_to_rgba_with_text(
     image_rgba
         .pixels()
         .flat_map(|pixel| {
-            let Rgba(data) = 
+            let Rgba(data) = *pixel;
+            vec![data[0], data[1], data[2], data[3]]
+        })
+        .collect()
+}
+
+#[cfg(not(feature = "fonts"))]
+pub fn convert_rgb_to_rgba(imag
