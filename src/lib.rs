@@ -373,4 +373,12 @@ pub fn convert_rgb_to_rgba_with_text(
             current_height,
             scale,
             &font,
-          
+            line,
+        );
+        current_height += font_size as i32;
+    }
+
+    image_rgba
+        .pixels()
+        .flat_map(|pixel| {
+            let Rgba(data) = 
