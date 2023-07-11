@@ -397,4 +397,10 @@ pub fn convert_rgb_to_rgba(image_buffer: &ImageBuffer<Rgb<u8>, Vec<u8>>) -> Vec<
     image_rgba
         .pixels()
         .flat_map(|pixel| {
-            let
+            let Rgba(data) = *pixel;
+            vec![data[0], data[1], data[2], data[3]]
+        })
+        .collect()
+}
+
+pub async fn clean_tts_input(input: String) -
