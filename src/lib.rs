@@ -390,4 +390,11 @@ pub fn convert_rgb_to_rgba_with_text(
 #[cfg(not(feature = "fonts"))]
 pub fn convert_rgb_to_rgba(image_buffer: &ImageBuffer<Rgb<u8>, Vec<u8>>) -> Vec<u8> {
     let image_rgba = ImageBuffer::from_fn(image_buffer.width(), image_buffer.height(), |x, y| {
-        let pixel = ima
+        let pixel = image_buffer.get_pixel(x, y);
+        Rgba([pixel[0], pixel[1], pixel[2], 255])
+    });
+
+    image_rgba
+        .pixels()
+        .flat_map(|pixel| {
+            let
