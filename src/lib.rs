@@ -407,3 +407,9 @@ pub async fn clean_tts_input(input: String) -> String {
     // remove strings of periods anywhere within the input text and replace with a single period.
     // do it in a loop
     let mut input = input.clone();
+    while input.contains("..") {
+        input = input.replace("..", ".");
+    }
+
+    // remove <|im_end|> string from input and replace with ""
+    let input = input.
