@@ -403,4 +403,7 @@ pub fn convert_rgb_to_rgba(image_buffer: &ImageBuffer<Rgb<u8>, Vec<u8>>) -> Vec<
         .collect()
 }
 
-pub async fn clean_tts_input(input: String) -
+pub async fn clean_tts_input(input: String) -> String {
+    // remove strings of periods anywhere within the input text and replace with a single period.
+    // do it in a loop
+    let mut input = input.clone();
