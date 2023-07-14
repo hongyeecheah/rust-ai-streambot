@@ -412,4 +412,7 @@ pub async fn clean_tts_input(input: String) -> String {
     }
 
     // remove <|im_end|> string from input and replace with ""
-    let input = input.
+    let input = input.replace("<|im_end|>", "");
+
+    // remove all extra spaces besides 1 space between words, if all spaces left then reduce to '"
+    let input = in
