@@ -422,4 +422,8 @@ pub async fn clean_tts_input(input: String) -> String {
         .replace(" .", ".")
         .replace(" ,", ",")
         .replace(" ?", "?")
-        
+        .replace(" !", "!")
+        .replace(" :", ":")
+        .replace(" ;", ";");
+
+    // remove any special characters from the text except for normal punctuatio
