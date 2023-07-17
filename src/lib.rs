@@ -426,4 +426,10 @@ pub async fn clean_tts_input(input: String) -> String {
         .replace(" :", ":")
         .replace(" ;", ";");
 
-    // remove any special characters from the text except for normal punctuatio
+    // remove any special characters from the text except for normal punctuation ./,;:?
+    let input = input
+        .chars()
+        .filter(|c| c.is_alphanumeric() || c.is_whitespace() || c.is_ascii_punctuation())
+        .collect::<String>();
+
+    
