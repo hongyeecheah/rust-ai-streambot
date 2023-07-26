@@ -436,4 +436,8 @@ pub async fn clean_tts_input(input: String) -> String {
     let input = input
         .split('.')
         .map(|s| {
-       
+            let s = s.trim();
+            if s.starts_with(|c: char| c.is_ascii_punctuation()) {
+                &s[1..]
+            } else {
+          
