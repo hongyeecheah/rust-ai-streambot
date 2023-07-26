@@ -432,4 +432,8 @@ pub async fn clean_tts_input(input: String) -> String {
         .filter(|c| c.is_alphanumeric() || c.is_whitespace() || c.is_ascii_punctuation())
         .collect::<String>();
 
-    
+    // split into sentences and check if any begin with special characters, remove them
+    let input = input
+        .split('.')
+        .map(|s| {
+       
