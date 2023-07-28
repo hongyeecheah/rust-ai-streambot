@@ -440,4 +440,10 @@ pub async fn clean_tts_input(input: String) -> String {
             if s.starts_with(|c: char| c.is_ascii_punctuation()) {
                 &s[1..]
             } else {
-          
+                s
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join(". ");
+
+    // remove any non ascii characters from the endin
