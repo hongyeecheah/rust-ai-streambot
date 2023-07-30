@@ -452,4 +452,8 @@ pub async fn clean_tts_input(input: String) -> String {
         .take_while(|c| c.is_ascii())
         .collect::<String>();
 
-    // lo
+    // loop removing end punctuation until no more
+    let mut input = input.clone();
+    while input.ends_with(|c: char| !c.is_alphanumeric()) {
+        input = input
+  
