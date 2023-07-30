@@ -446,4 +446,10 @@ pub async fn clean_tts_input(input: String) -> String {
         .collect::<Vec<&str>>()
         .join(". ");
 
-    // remove any non ascii characters from the endin
+    // remove any non ascii characters from the ending of the input text
+    let input = input
+        .chars()
+        .take_while(|c| c.is_ascii())
+        .collect::<String>();
+
+    // lo
