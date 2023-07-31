@@ -469,4 +469,6 @@ pub fn scale_image(
     new_height: Option<u32>,
     image_position: Option<String>,
 ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-    
+    if let (Some(target_width), Some(target_height)) = (new_width, new_height) {
+        if target_width == 0 || target_height == 0 {
+            return im
