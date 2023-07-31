@@ -456,4 +456,12 @@ pub async fn clean_tts_input(input: String) -> String {
     let mut input = input.clone();
     while input.ends_with(|c: char| !c.is_alphanumeric()) {
         input = input
-  
+            .trim_end_matches(|c: char| !c.is_alphanumeric())
+            .to_string();
+    }
+
+    input
+}
+
+pub fn scale_image(
+ 
