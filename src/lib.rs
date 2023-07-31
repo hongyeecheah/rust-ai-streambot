@@ -464,4 +464,9 @@ pub async fn clean_tts_input(input: String) -> String {
 }
 
 pub fn scale_image(
- 
+    image: ImageBuffer<Rgb<u8>, Vec<u8>>,
+    new_width: Option<u32>,
+    new_height: Option<u32>,
+    image_position: Option<String>,
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    
