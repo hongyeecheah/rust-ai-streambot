@@ -471,4 +471,9 @@ pub fn scale_image(
 ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
     if let (Some(target_width), Some(target_height)) = (new_width, new_height) {
         if target_width == 0 || target_height == 0 {
-            return im
+            return image;
+        }
+
+        let (orig_width, orig_height) = image.dimensions();
+        let scale = (target_width as f32 / orig_width as f32)
+            .mi
