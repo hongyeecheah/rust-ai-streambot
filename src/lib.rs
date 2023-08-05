@@ -481,4 +481,7 @@ pub fn scale_image(
         let scaled_height = (orig_height as f32 * scale).round() as u32;
 
         // Scale the image while preserving the aspect ratio.
-        let scaled_image = r
+        let scaled_image = resize(&image, scaled_width, scaled_height, FilterType::Lanczos3);
+
+        // Create a new image with the target dimensions filled with black pixels.
+  
