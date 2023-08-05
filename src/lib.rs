@@ -478,4 +478,7 @@ pub fn scale_image(
         let scale = (target_width as f32 / orig_width as f32)
             .min(target_height as f32 / orig_height as f32);
         let scaled_width = (orig_width as f32 * scale).round() as u32;
-        let scale
+        let scaled_height = (orig_height as f32 * scale).round() as u32;
+
+        // Scale the image while preserving the aspect ratio.
+        let scaled_image = r
