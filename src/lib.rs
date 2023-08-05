@@ -476,4 +476,6 @@ pub fn scale_image(
 
         let (orig_width, orig_height) = image.dimensions();
         let scale = (target_width as f32 / orig_width as f32)
-            .mi
+            .min(target_height as f32 / orig_height as f32);
+        let scaled_width = (orig_width as f32 * scale).round() as u32;
+        let scale
