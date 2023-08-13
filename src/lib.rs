@@ -484,4 +484,6 @@ pub fn scale_image(
         let scaled_image = resize(&image, scaled_width, scaled_height, FilterType::Lanczos3);
 
         // Create a new image with the target dimensions filled with black pixels.
-  
+        let mut new_image = ImageBuffer::from_pixel(target_width, target_height, Rgb([0, 0, 0]));
+
+        // Calculate the offsets to position the scaled image based on image_posi
