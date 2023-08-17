@@ -486,4 +486,7 @@ pub fn scale_image(
         // Create a new image with the target dimensions filled with black pixels.
         let mut new_image = ImageBuffer::from_pixel(target_width, target_height, Rgb([0, 0, 0]));
 
-        // Calculate the offsets to position the scaled image based on image_posi
+        // Calculate the offsets to position the scaled image based on image_position.
+        let x_offset = match image_position.as_deref() {
+            Some("left") => 0,
+            Some("right") => target_width - scaled_width,
