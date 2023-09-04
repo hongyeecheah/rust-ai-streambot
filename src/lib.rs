@@ -490,3 +490,6 @@ pub fn scale_image(
         let x_offset = match image_position.as_deref() {
             Some("left") => 0,
             Some("right") => target_width - scaled_width,
+            _ => (target_width - scaled_width) / 2, // Default to center if it's not "left" or "right"
+        };
+        let y_offset = (target
