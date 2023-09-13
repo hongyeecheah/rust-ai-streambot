@@ -492,4 +492,7 @@ pub fn scale_image(
             Some("right") => target_width - scaled_width,
             _ => (target_width - scaled_width) / 2, // Default to center if it's not "left" or "right"
         };
-        let y_offset = (target
+        let y_offset = (target_height - scaled_height) / 2;
+
+        // Copy the scaled image onto the new image at the calculated offset.
+        for (x, y, pixel) in scaled_ima
