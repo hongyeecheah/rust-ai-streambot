@@ -497,4 +497,9 @@ pub fn scale_image(
         // Copy the scaled image onto the new image at the calculated offset.
         for (x, y, pixel) in scaled_image.enumerate_pixels() {
             // Ensure the pixel is within the bounds of the target image dimensions.
-            if x + x_offset < target_width &&
+            if x + x_offset < target_width && y + y_offset < target_height {
+                new_image.put_pixel(x + x_offset, y + y_offset, *pixel);
+            }
+        }
+
+      
