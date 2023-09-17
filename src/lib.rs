@@ -495,4 +495,6 @@ pub fn scale_image(
         let y_offset = (target_height - scaled_height) / 2;
 
         // Copy the scaled image onto the new image at the calculated offset.
-        for (x, y, pixel) in scaled_ima
+        for (x, y, pixel) in scaled_image.enumerate_pixels() {
+            // Ensure the pixel is within the bounds of the target image dimensions.
+            if x + x_offset < target_width &&
