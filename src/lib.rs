@@ -502,4 +502,9 @@ pub fn scale_image(
             }
         }
 
-      
+        new_image
+    } else {
+        // Return the original image if dimensions are not specified.
+        image
+    }
+}
