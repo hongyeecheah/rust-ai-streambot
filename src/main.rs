@@ -544,3 +544,184 @@ async fn main() {
                             && decode_batch.len() > args.ai_network_packet_count)
                     {
                         let mut network_packet_dump: String = String::new();
+                        packet_last_sent_ts = Instant::now();
+
+                        network_packet_dump.push_str("\n");
+                        // fill network_packet_dump with the json of each stream_data plus hexdump of the packet payload
+                        for stream_data in &decode_batch {
+                            if args.ai_network_packets {
+                                let stream_data_json = serde_json::to_string(&stream_data).unwrap();
+                                network_packet_dump.push_str(&stream_data_json);
+                                network_packet_dump.push_str("\n");
+                            }
+
+                            // hex of the packet_chunk with ascii representation after | for each line
+                            if args.ai_network_hexdump {
+                                // Extract the necessary slice for PID extraction and parsing
+                                let packet_chunk = &stream_data.packet[stream_data.packet_start
+                                    ..stream_data.packet_start + stream_data.packet_len];
+
+                                network_packet_dump.push_str(&hexdump_ascii(
+                                    &packet_chunk,
+                                    0,
+                                    (stream_data.packet_start + stream_data.packet_len)
+                                        - stream_data.packet_start,
+                                ));
+                                network_packet_dump.push_str("\n");
+                            }
+                        }
+                        // get PID_MAP and each stream data in json format and send it to the main thread
+                        // get pretty date and time
+                        let pretty_date_time = format!(
+                            "#{}: {}",
+                            count,
+                            chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f")
+                        );
+                        let pid_map = format!("{}: {}", pretty_date_time, get_pid_map());
+                        network_packet_dump.push_str(&pid_map);
+
+                        // Send the network packet dump to the Main thread
+                        if let Err(e) = batch_tx.send(network_packet_dump.clone()).await {
+                            eprintln!("Failed to send decode batch: {}", e);
+                        }
+
+                        // empty decode_batch
+                        decode_batch.clear();
+                    }
+                    break;
+                }
+            } else {
+                // sleep for a while to avoid busy loop
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+        }
+    });
+
+    let twitch_auth = env::var("TWITCH_AUTH")
+        .ok()
+        .unwrap_or_else(|| "NO_AUTH_KEY".to_string());
+
+    let running_processor_twitch = Arc::new(AtomicBool::new(true));
+    let (twitch_tx, mut twitch_rx) = mpsc::channel(100);
+
+    if args.twitch_client {
+        // Clone values before moving them into the closure
+        let twitch_channel_clone = vec![args.twitch_channel.clone()];
+        let twitch_username_clone = args.twitch_username.clone();
+        let twitch_auth_clone = twitch_auth.clone(); // Assuming twitch_auth is clonable and you want to use it within the closure.
+
+        // TODO: add mpsc channels for communication between the twitch setup and the main thread
+        let running_processor_twitch_clone = running_processor_twitch.clone();
+        let args_clone = args.clone();
+        let _twitch_handle = tokio::spawn(async move {
+            info!(
+                "Setting up Twitch channel {} for user {}",
+                twitch_channel_clone.join(", "), // Assuming it's a Vec<String>
+                twitch_username_clone
+            );
+
+            if twitch_auth == "NO_AUTH_KEY" {
+                error!(
+                    "Twitch Auth key is not set. Please set the TWITCH_AUTH environment variable."
+                );
+                std::process::exit(1);
+            }
+
+            loop {
+                match twitch_daemon(
+                    twitch_username_clone.clone(),
+                    twitch_auth_clone.clone(),
+                    twitch_channel_clone.clone(),
+                    running_processor_twitch_clone.clone(),
+                    twitch_tx.clone(),
+                    args_clone,
+                )
+                .await
+                {
+                    Ok(_) => {
+                        info!(
+                            "Twitch client exiting for channel {} username {}",
+                            twitch_channel_clone.join(", "), // Assuming it's a Vec<String>
+                            twitch_username_clone
+                        );
+                        break;
+                    }
+                    Err(e) => {
+                        error!(
+                            "Error setting up Twitch channel {} for user {}: {}",
+                            twitch_channel_clone.join(", "), // Assuming it's a Vec<String>
+                            twitch_username_clone,
+                            e
+                        );
+
+                        // exit the loop
+                        std::process::exit(1);
+                    }
+                }
+            }
+        });
+    }
+    let poll_interval = args.poll_interval;
+    let poll_interval_duration = Duration::from_millis(poll_interval);
+    let mut poll_start_time = Instant::now();
+    let mut poll_end_time = Instant::now();
+    if args.daemon {
+        println!(
+            "Starting up RsLLM with poll interval of {} seconds...",
+            poll_interval_duration.as_secs()
+        );
+    } else {
+        println!("Running RsLLM for [{}] iterations...", args.max_iterations);
+    }
+    let mut iterations = 0;
+
+    // Boot up message and image repeat of the query sent to the pipeline
+    if args.sd_image || args.tts_enable || args.oai_tts || args.mimic3_tts {
+        let mut sd_config = SDConfig::new();
+        sd_config.prompt = args.assistant_image_prompt.clone();
+        sd_config.height = Some(args.sd_height);
+        sd_config.width = Some(args.sd_width);
+        sd_config.image_position = Some(args.image_alignment.clone());
+        sd_config.intermediary_images = args.sd_intermediary_images;
+        sd_config.custom_model = Some(args.sd_custom_model.clone());
+        // match args.sd_model with on of the strings "1.5", "2.1", "xl", "turbo" and set the sd_version accordingly
+        sd_config.sd_version = if args.sd_model == "1.5" {
+            StableDiffusionVersion::V1_5
+        } else if args.sd_model == "2.1" {
+            StableDiffusionVersion::V2_1
+        } else if args.sd_model == "xl" {
+            StableDiffusionVersion::Xl
+        } else if args.sd_model == "turbo" {
+            StableDiffusionVersion::Turbo
+        } else if args.sd_model == "Custom" {
+            StableDiffusionVersion::Custom
+        } else {
+            StableDiffusionVersion::V1_5
+        };
+
+        let output_id = Uuid::new_v4().simple().to_string(); // Generates a UUID and converts it to a simple, hyphen-free string
+        if args.sd_scaled_height > 0 {
+            sd_config.scaled_height = Some(args.sd_scaled_height);
+        }
+        if args.sd_scaled_width > 0 {
+            sd_config.scaled_width = Some(args.sd_scaled_width);
+        }
+        sd_config.n_steps = args.sd_n_steps;
+        // just send a message with the last_message field true to indicate the end of the response
+        let message_data_for_pipeline = MessageData {
+            paragraph: args.greeting.to_string(),
+            output_id: output_id.to_string(),
+            paragraph_count: total_paragraph_count,
+            sd_config,
+            mimic3_voice: args.mimic3_voice.to_string(),
+            subtitle_position: args.subtitle_position.to_string(),
+            args: args.clone(),
+            shutdown: false,
+            last_message: false,
+        };
+
+        // For pipeline task
+        pipeline_task_sender
+            .send(message_data_for_pipeline)
+            .await
+            .expect("Failed to send bootup pipeline task");
