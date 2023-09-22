@@ -384,3 +384,163 @@ async fn main() {
         read_size,
         buffer_size: args.buffer_size,
         pcap_stats: args.pcap_stats,
+        debug_on: args.hexdump,
+        capture_task: None,
+    };
+
+    // Initialize messages with system_message outside the loop
+    let mut messages = vec![system_message.clone()];
+
+    // Initialize the network capture if ai_network_stats is true
+    if args.ai_network_stats {
+        network_capture(&mut network_capture_config, ptx);
+    }
+
+    let running_processor_network = Arc::new(AtomicBool::new(true));
+    let running_processor_network_clone = running_processor_network.clone();
+
+    let processing_handle = tokio::spawn(async move {
+        let mut decode_batch = Vec::new();
+        let mut video_pid: Option<u16> = Some(0xFFFF);
+        let mut video_codec: Option<Codec> = Some(Codec::NONE);
+        let mut current_video_frame = Vec::<StreamData>::new();
+        let mut pmt_info: PmtInfo = PmtInfo {
+            pid: 0xFFFF,
+            packet: Vec::new(),
+        };
+
+        let mut packet_last_sent_ts = Instant::now();
+        let mut count = 0;
+        while running_processor_network_clone.load(Ordering::SeqCst) {
+            if args.ai_network_stats {
+                debug!("Capturing network packets...");
+                while let Some(packet) = prx.recv().await {
+                    count += 1;
+                    debug!(
+                        "#{} --- Received packet with size: {} bytes",
+                        count,
+                        packet.len()
+                    );
+
+                    // Check if chunk is MPEG-TS or SMPTE 2110
+                    let chunk_type = is_mpegts_or_smpte2110(&packet[args.payload_offset..]);
+                    if chunk_type != 1 {
+                        if chunk_type == 0 {
+                            hexdump(&packet, 0, packet.len());
+                            error!("Not MPEG-TS or SMPTE 2110");
+                        }
+                        is_mpegts = false;
+                    }
+
+                    // Process the packet here
+                    let chunks = if is_mpegts {
+                        process_mpegts_packet(
+                            args.payload_offset,
+                            packet,
+                            args.packet_size,
+                            start_time,
+                        )
+                    } else {
+                        process_smpte2110_packet(
+                            args.payload_offset,
+                            packet,
+                            args.packet_size,
+                            start_time,
+                            false,
+                        )
+                    };
+
+                    // Process each chunk
+                    for mut stream_data in chunks {
+                        // check for null packets of the pid 8191 0x1FFF and skip them
+                        if stream_data.pid >= 0x1FFF {
+                            debug!("Skipping null packet");
+                            continue;
+                        }
+
+                        if args.hexdump {
+                            hexdump(
+                                &stream_data.packet,
+                                stream_data.packet_start,
+                                stream_data.packet_len,
+                            );
+                        }
+
+                        // Extract the necessary slice for PID extraction and parsing
+                        let packet_chunk = &stream_data.packet[stream_data.packet_start
+                            ..stream_data.packet_start + stream_data.packet_len];
+
+                        if is_mpegts {
+                            let pid = stream_data.pid;
+                            // Handle PAT and PMT packets
+                            match pid {
+                                PAT_PID => {
+                                    debug!("ProcessPacket: PAT packet detected with PID {}", pid);
+                                    pmt_info = parse_and_store_pat(&packet_chunk);
+                                    // Print TR 101 290 errors
+                                    if args.show_tr101290 {
+                                        info!("STATUS::TR101290:ERRORS: {}", tr101290_errors);
+                                    }
+                                }
+                                _ => {
+                                    // Check if this is a PMT packet
+                                    if pid == pmt_info.pid {
+                                        debug!(
+                                            "ProcessPacket: PMT packet detected with PID {}",
+                                            pid
+                                        );
+                                        // Update PID_MAP with new stream types
+                                        update_pid_map(&packet_chunk, &pmt_info.packet);
+                                        // Identify the video PID (if not already identified)
+                                        if let Some((new_pid, new_codec)) =
+                                            identify_video_pid(&packet_chunk)
+                                        {
+                                            if video_pid.map_or(true, |vp| vp != new_pid) {
+                                                video_pid = Some(new_pid);
+                                                info!(
+                                                    "STATUS::VIDEO_PID:CHANGE: to {}/{} from {}/{}",
+                                                    new_pid,
+                                                    new_codec.clone(),
+                                                    video_pid.unwrap(),
+                                                    video_codec.unwrap()
+                                                );
+                                                video_codec = Some(new_codec.clone());
+                                                // Reset video frame as the video stream has changed
+                                                current_video_frame.clear();
+                                            } else if video_codec != Some(new_codec.clone()) {
+                                                info!(
+                                                    "STATUS::VIDEO_CODEC:CHANGE: to {} from {}",
+                                                    new_codec,
+                                                    video_codec.unwrap()
+                                                );
+                                                video_codec = Some(new_codec);
+                                                // Reset video frame as the codec has changed
+                                                current_video_frame.clear();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Check for TR 101 290 errors
+                        process_packet(
+                            &mut stream_data,
+                            &mut tr101290_errors,
+                            is_mpegts,
+                            pmt_info.pid,
+                        );
+                        count += 1;
+
+                        decode_batch.push(stream_data);
+                    }
+
+                    // check if it is 60 seconds since the last packet was sent
+                    let last_packet_sent = packet_last_sent_ts.elapsed().as_secs();
+
+                    // If the batch is full, process it
+                    if args.poll_interval == 0
+                        || (last_packet_sent > (args.poll_interval / 1000)
+                            && decode_batch.len() > args.ai_network_packet_count)
+                    {
+                        let mut network_packet_dump: String = String::new();
