@@ -197,3 +197,190 @@ async fn main() {
                     // update image cache images
                     let speech_data = process_speech(message_data_clone.clone()).await;
                     let mut store = processed_data_store.lock().await;
+
+                    match store.entry(message_data_clone.paragraph_count) {
+                        std::collections::hash_map::Entry::Vacant(e) => {
+                            e.insert(ProcessedData {
+                                paragraph: message_data_clone.paragraph.clone(),
+                                image_data: Some(images),
+                                audio_data: Some(speech_data),
+                                paragraph_count: message_data_clone.paragraph_count,
+                                subtitle_position: message_data_clone.subtitle_position.clone(),
+                                time_stamp: 0,
+                                shutdown: message_data_clone.shutdown.clone(),
+                                completed: true,
+                                last_message: message_data_clone.last_message.clone(),
+                            });
+                        }
+                        std::collections::hash_map::Entry::Occupied(mut e) => {
+                            let entry = e.get_mut();
+                            entry.image_data = Some(images);
+                            entry.audio_data = Some(speech_data);
+                            entry.completed = true;
+                        }
+                    }
+                });
+
+                // wait for images and collect any in and put into the last_images vec
+                if let Some(images) = image_rx.recv().await {
+                    let mut last_images = last_images.lock().await;
+                    *last_images = images;
+                }
+
+                // wait for the image task to finish
+                image_task.await.unwrap();
+
+                // Check if this is the last message
+                if message_data.last_message {
+                    std::io::stdout().flush().unwrap();
+                    info!(
+                        "Pipeline processing task: Last message processed {}",
+                        message_data.paragraph_count
+                    );
+                }
+
+                // check if shutdown is requested from the message shutdown flag
+                if message_data.shutdown {
+                    std::io::stdout().flush().unwrap();
+                    info!("Shutdown requested from message data for pipeline processing task.");
+                    break;
+                }
+            }
+        })
+    };
+
+    // NDI sync task
+    #[cfg(feature = "ndi")]
+    let processed_data_store_for_ndi = processed_data_store.clone();
+    #[cfg(feature = "ndi")]
+    let args_for_ndi = args.clone();
+
+    #[cfg(feature = "ndi")]
+    let running_processor_ndi = Arc::new(AtomicBool::new(true));
+    #[cfg(feature = "ndi")]
+    let running_processor_ndi_clone = running_processor_ndi.clone();
+    #[cfg(feature = "ndi")]
+    let ndi_sync_task = tokio::spawn(async move {
+        let mut current_key = 0;
+        let mut max_key = 0;
+
+        while running_processor_ndi_clone.load(Ordering::SeqCst) {
+            let mut data = {
+                let store = processed_data_store_for_ndi.lock().await;
+                store.get(&current_key).cloned()
+            };
+
+            if let Some(ref mut data) = data {
+                if data.completed {
+                    // Update max_key if necessary
+                    max_key = max_key.max(data.paragraph_count);
+
+                    // check if we are reset to paragraph count 1, if so, reset the max_key and current key back to 1 and set as last_message
+                    if data.paragraph_count == 0 && current_key > 0 {
+                        max_key = 0;
+                        current_key = 0;
+                        data.last_message = true;
+                    }
+
+                    // Check if this is the last message and send the NDI done signal
+                    if data.last_message {
+                        std::io::stdout().flush().unwrap();
+                        debug!(
+                            "NDI sync task: Last message {} processed for key {}, sending done signal.",
+                            data.paragraph_count, current_key
+                        );
+                        // Send NDI done signal
+                        if let Err(e) = ndi_done_tx.send(()).await {
+                            error!("Failed to send NDI done signal: {}", e);
+                        }
+                        std::io::stdout().flush().unwrap();
+                        debug!(
+                            "Sent NDI Sending done signal for {} key {}.",
+                            data.paragraph_count, current_key
+                        );
+                    }
+
+                    // Send to NDI
+                    #[cfg(feature = "ndi")]
+                    send_to_ndi(data.clone(), &args_for_ndi).await;
+                    {
+                        let mut store = processed_data_store_for_ndi.lock().await;
+                        store.remove(&current_key);
+                    }
+                    current_key += 1;
+                } else {
+                    std::io::stdout().flush().unwrap();
+                    debug!(
+                        "NDI sync task: Message {} data not completed for key {}",
+                        data.paragraph_count, current_key
+                    );
+                    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+                }
+            } else {
+                std::io::stdout().flush().unwrap();
+                debug!("NDI sync task: No data found for key {}", current_key);
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
+                // If the current key is not found, check if it's less than the max key
+                /*if current_key < max_key {
+                    // If the current key is less than the max key, increment the current key and continue
+                    log::error!(
+                        "NDI sync task: Current key {} is less than max key {}",
+                        current_key,
+                        max_key
+                    );
+                    current_key += 1;
+                } else {
+                    // If the current key is equal to or greater than the max key, sleep and continue
+                    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                    }*/
+            }
+
+            // SHUTDOWN Signal
+            if data.is_some() && data.as_ref().unwrap().shutdown {
+                running_processor_ndi_clone.store(false, Ordering::SeqCst);
+                std::io::stdout().flush().unwrap();
+                info!("Shutting down NDI sync task on shutdown signal.");
+                break;
+            }
+        }
+
+        // exit the loop
+        std::io::stdout().flush().unwrap();
+        info!("Exiting NDI sync task.");
+        std::process::exit(0);
+    });
+
+    let mut llm_host = args.llm_host.clone();
+    if args.use_openai {
+        // set the llm_host to the openai api
+        llm_host = "https://api.openai.com".to_string();
+    }
+
+    // start time
+    let start_time = current_unix_timestamp_ms().unwrap_or(0);
+    let mut total_paragraph_count = 0;
+
+    // Perform TR 101 290 checks
+    let mut tr101290_errors = Tr101290Errors::new();
+    // calculate read size based on batch size and packet size
+    let read_size: i32 =
+        (args.packet_size as i32 * args.pcap_batch_size as i32) + args.payload_offset as i32; // pcap read size
+    let mut is_mpegts = true; // Default to true, update based on actual packet type
+
+    let (ptx, mut prx) = mpsc::channel::<Arc<Vec<u8>>>(args.pcap_channel_size);
+    let (batch_tx, mut batch_rx) = mpsc::channel::<String>(args.pcap_channel_size); // Channel for passing processed packets to main logic
+    let mut network_capture_config = NetworkCapture {
+        running: Arc::new(AtomicBool::new(true)),
+        dpdk: false,
+        use_wireless: args.use_wireless,
+        promiscuous: args.promiscuous,
+        immediate_mode: args.immediate_mode,
+        source_protocol: Arc::new(args.source_protocol.to_string()),
+        source_device: Arc::new(args.source_device.to_string()),
+        source_ip: Arc::new(args.source_ip.to_string()),
+        source_port: args.source_port,
+        read_time_out: 60_000,
+        read_size,
+        buffer_size: args.buffer_size,
+        pcap_stats: args.pcap_stats,
