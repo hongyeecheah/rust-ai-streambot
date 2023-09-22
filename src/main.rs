@@ -725,3 +725,155 @@ async fn main() {
             .send(message_data_for_pipeline)
             .await
             .expect("Failed to send bootup pipeline task");
+
+        total_paragraph_count += 1;
+    }
+
+    loop {
+        let mut twitch_query = false;
+        let mut query = args.query.clone();
+
+        let openai_key = env::var("OPENAI_API_KEY")
+            .ok()
+            .unwrap_or_else(|| "NO_API_KEY".to_string());
+
+        if (args.use_openai || args.oai_tts) && openai_key == "NO_API_KEY" {
+            error!(
+                "OpenAI API key is not set. Please set the OPENAI_API_KEY environment variable."
+            );
+            std::process::exit(1);
+        }
+
+        // clear messages from previous iteration if no_history is set to true
+        if args.no_history {
+            messages.clear();
+            messages.push(system_message.clone());
+        }
+
+        if args.twitch_client {
+            loop {
+                match tokio::time::timeout(Duration::from_millis(100), twitch_rx.recv()).await {
+                    Ok(Some(msg)) => {
+                        if msg.starts_with("!message") {
+                            let message = msg.splitn(2, ' ').nth(1).unwrap_or("");
+                            // set the current query to the message
+                            query = message.to_string();
+                            twitch_query = true;
+                            break;
+                        } else if msg.is_empty() || msg.starts_with("!") {
+                            query = args.query.clone();
+                        } else {
+                            // add the message to the messages
+                            let twitch_message = Message {
+                                role: "user".to_string(),
+                                content: msg.to_string(),
+                            };
+                            // store in history for context of chat room
+                            messages.push(twitch_message);
+                            // set the current query to the the default
+                            query = args.query.clone();
+                        }
+                        break;
+                    }
+                    Ok(None) => {
+                        // The channel has been closed, so break the loop
+                        break;
+                    }
+                    Err(_) => {
+                        // Timeout occurred, so continue the loop without blocking
+                        break;
+                    }
+                }
+            }
+        }
+
+        // break the loop if we are not running as a daemon or hit max iterations
+        let rctrlc_clone = running_ctrlc.clone();
+        if (!rctrlc_clone.load(Ordering::SeqCst)
+            || (!args.daemon && !args.interactive && args.max_iterations <= iterations))
+            || (!args.daemon
+                && !args.interactive
+                && args.max_iterations > 1
+                && args.max_iterations > iterations)
+        {
+            // stop the running threads
+            if args.ai_network_stats {
+                network_capture_config
+                    .running
+                    .store(false, Ordering::SeqCst);
+            }
+
+            // stop the running threads
+            info!("Signaling background tasks to complete...");
+            running_processor_network.store(false, Ordering::SeqCst);
+            running_processor_twitch.store(false, Ordering::SeqCst);
+
+            // Await the completion of background tasks
+            info!("waiting for network capture handle to complete...");
+            let _ = processing_handle.await;
+            info!("Network Processing handle complete.");
+
+            // set a flag to stop the pipeline processing task with the message shutdown field
+            let output_id = Uuid::new_v4().simple().to_string(); // Generates a UUID and converts it to a simple, hyphen-free string
+            let mut sd_config = SDConfig::new();
+            sd_config.prompt = args.assistant_image_prompt.to_string();
+            sd_config.height = Some(args.sd_height);
+            sd_config.width = Some(args.sd_width);
+            sd_config.image_position = Some(args.image_alignment.clone());
+            sd_config.intermediary_images = args.sd_intermediary_images;
+            sd_config.custom_model = Some(args.sd_custom_model.clone());
+            if args.sd_scaled_height > 0 {
+                sd_config.scaled_height = Some(args.sd_scaled_height);
+            }
+            if args.sd_scaled_width > 0 {
+                sd_config.scaled_width = Some(args.sd_scaled_width);
+            }
+            // match args.sd_model with on of the strings "1.5", "2.1", "xl", "turbo" and set the sd_version accordingly
+            sd_config.sd_version = if args.sd_model == "1.5" {
+                StableDiffusionVersion::V1_5
+            } else if args.sd_model == "2.1" {
+                StableDiffusionVersion::V2_1
+            } else if args.sd_model == "xl" {
+                StableDiffusionVersion::Xl
+            } else if args.sd_model == "turbo" {
+                StableDiffusionVersion::Turbo
+            } else if args.sd_model == "Custom" {
+                StableDiffusionVersion::Custom
+            } else {
+                StableDiffusionVersion::V1_5
+            };
+            sd_config.n_steps = args.sd_n_steps;
+            pipeline_task_sender
+                .send(MessageData {
+                    paragraph: "Alice is Shutting Down the AI Channel, goodbye!".to_string(),
+                    output_id: output_id.to_string(),
+                    paragraph_count: total_paragraph_count,
+                    sd_config,
+                    mimic3_voice: args.mimic3_voice.to_string(),
+                    subtitle_position: args.subtitle_position.to_string(),
+                    args: args.clone(),
+                    shutdown: true,
+                    last_message: true,
+                })
+                .await
+                .expect("Failed to send last audio/speech pipeline task");
+
+            // Pipeline await completion
+            info!("waiting for pipline handle to complete...");
+            let _ = pipeline_processing_task.await;
+            info!("pipeline handle completed.");
+
+            // NDI await completion
+            #[cfg(feature = "ndi")]
+            info!("waiting for ndi handle to complete...");
+            #[cfg(feature = "ndi")]
+            let _ = ndi_sync_task.await;
+            #[cfg(feature = "ndi")]
+            info!("ndi handle completed.");
+
+            // exit here
+            info!("Exiting main loop...");
+            std::process::exit(0);
+        }
+
+        // Calculate elapsed time since last start
