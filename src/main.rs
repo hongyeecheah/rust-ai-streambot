@@ -877,3 +877,173 @@ async fn main() {
         }
 
         // Calculate elapsed time since last start
+        let elapsed = poll_start_time.elapsed();
+
+        let mut max_tokens = args.max_tokens as usize;
+
+        // Did not get a message from twitch, so don't process the query
+        if !twitch_query && args.twitch_client {
+            if args.continuous {
+                // only play a story after poll_interval_duration has passed, else continue
+                let elapsed_end = poll_end_time.elapsed();
+                if elapsed_end < poll_interval_duration {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    continue;
+                }
+            } else {
+                // sleep for a while to avoid busy loop
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                continue;
+            }
+        } else if args.twitch_client && twitch_query {
+            // reset the max tokens
+            max_tokens = args.twitch_max_tokens_llm;
+        }
+
+        // Sleep only if the elapsed time is less than the poll interval
+        if !args.twitch_client
+            && iterations > 0
+            && !args.interactive
+            && (args.daemon || args.max_iterations > 1)
+            && elapsed < poll_interval_duration
+        {
+            // Sleep only if the elapsed time is less than the poll interval
+            println!(
+                "Finished loop #{} Sleeping for {} ms...",
+                iterations,
+                poll_interval_duration.as_millis() - elapsed.as_millis()
+            );
+            tokio::time::sleep(poll_interval_duration - elapsed).await;
+            println!("Continuing after sleeping with loop #{}...", iterations + 1);
+        }
+
+        // Update start time for the next iteration
+        poll_start_time = Instant::now();
+
+        // OS and Network stats message
+        let system_stats_json = if args.ai_os_stats {
+            get_stats_as_json(StatsType::System).await
+        } else {
+            // Default input message
+            json!({})
+        };
+
+        // Add the system stats to the messages
+        if !args.ai_os_stats && !args.ai_network_stats {
+            if !args.interactive && !query.is_empty() {
+                let query_clone = query.clone();
+                let user_message = Message {
+                    role: "user".to_string(),
+                    content: query_clone.to_string(),
+                };
+                messages.push(user_message.clone());
+            } else {
+                // output a prompt and wait for input, create a user message and add it to the messages
+                print!("#{} rsllm> ", iterations);
+                std::io::stdout().flush().expect("Could not flush stdout");
+                let mut prompt = String::new();
+                std::io::stdin()
+                    .read_line(&mut prompt)
+                    .expect("Could not read line");
+                if prompt.ends_with('\n') {
+                    prompt.pop();
+                    if prompt.ends_with('\r') {
+                        prompt.pop();
+                    }
+                }
+                let user_message = Message {
+                    role: "user".to_string(),
+                    content: prompt.to_string(),
+                };
+                messages.push(user_message.clone());
+            }
+        } else if args.ai_network_stats {
+            // create nework packet dump message from collected stream_data in decode_batch
+            // Try to receive new packet batches if available
+            let mut msg_count = 0;
+            while let Ok(decode_batch) = batch_rx.try_recv() {
+                msg_count += 1;
+                //debug!("Received network packet dump message: {}", decode_batch);
+                // Handle the received decode_batch here...
+                // get current pretty date and time
+                let pretty_date_time = format!(
+                    "#{}: {} -",
+                    iterations,
+                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f")
+                );
+                let network_stats_message = Message {
+                    role: "user".to_string(),
+                    content: format!(
+                        "{} System Stats: {}\nPackets: {}\nInstructions: {}\n",
+                        pretty_date_time,
+                        system_stats_json.to_string(),
+                        decode_batch,
+                        query
+                    ),
+                };
+                messages.push(network_stats_message.clone());
+                if msg_count >= 1 {
+                    break;
+                }
+            }
+        } else if args.ai_os_stats {
+            let pretty_date_time = format!(
+                "#{}: {} - ",
+                iterations,
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f")
+            );
+            let system_stats_message = Message {
+                role: "user".to_string(),
+                content: format!(
+                    "{} System Stats: {}\nInstructions: {}",
+                    pretty_date_time,
+                    system_stats_json.to_string(),
+                    query
+                ),
+            };
+            messages.push(system_stats_message.clone());
+        }
+
+        // Debugging LLM history
+        if args.debug_llm_history {
+            // print out the messages to the console
+            println!("==============================");
+            println!("Messages:");
+            println!("==============================");
+            for message in &messages {
+                println!("{}: {}\n---\n", message.role, message.content);
+            }
+            println!("============= NEW RESPONSE ============");
+        } else {
+            println!("============= NEW RESPONSE ============");
+        }
+
+        // measure size of messages in bytes and print it out
+        let messages_size = bincode::serialize(&messages).unwrap().len();
+        info!("Initial Messages size: {}", messages_size);
+
+        let llm_history_size_bytes: usize = args.llm_history_size; // max history size in bytes
+
+        // Separate system messages to preserve them
+        let (system_messages, mut non_system_messages): (Vec<_>, Vec<_>) =
+            messages.into_iter().partition(|m| m.role == "system");
+
+        let total_non_system_size: usize =
+            non_system_messages.iter().map(|m| m.content.len()).sum();
+
+        // If non-system messages alone exceed the limit, we need to trim
+        if !args.no_history
+            && args.daemon
+            && llm_history_size_bytes > 0
+            && total_non_system_size > llm_history_size_bytes
+        {
+            let mut excess_size = total_non_system_size - llm_history_size_bytes;
+
+            info!(
+                "Pruning excess history size: removing {} of {} bytes to {} bytes.",
+                excess_size, total_non_system_size, llm_history_size_bytes
+            );
+
+            // Reverse iterate to trim from the end
+            for message in non_system_messages.iter_mut().rev() {
+                let message_size = message.content.len();
