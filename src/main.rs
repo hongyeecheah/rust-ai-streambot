@@ -1047,3 +1047,168 @@ async fn main() {
             // Reverse iterate to trim from the end
             for message in non_system_messages.iter_mut().rev() {
                 let message_size = message.content.len();
+                if excess_size == 0 {
+                    break;
+                }
+
+                if message_size <= excess_size {
+                    // Remove the whole message content if it's smaller than or equal to the excess
+                    excess_size -= message_size;
+                    message.content.clear();
+                } else {
+                    // Truncate the message content to fit within the limit
+                    let new_size = message_size - excess_size;
+                    message.content = message.content.chars().take(new_size).collect();
+                    break; // After truncation, we should be within the limit
+                }
+            }
+
+            info!(
+                "Pruning complete. New history size: {} bytes for {} messages.",
+                non_system_messages
+                    .iter()
+                    .map(|m| m.content.len())
+                    .sum::<usize>(),
+                non_system_messages.len()
+            );
+        }
+
+        // Reassemble messages, ensuring system messages are preserved at their original position
+        messages = system_messages
+            .into_iter()
+            .chain(non_system_messages.into_iter())
+            .collect();
+
+        let adjusted_messages_size = messages.iter().map(|m| m.content.len()).sum::<usize>();
+        if messages_size != adjusted_messages_size {
+            debug!(
+                "Messages size (bytes of content) adjusted from {} to {} for {} messages.",
+                messages_size,
+                adjusted_messages_size,
+                messages.len()
+            );
+        } else {
+            debug!(
+                "Messages size {} for {} messages.",
+                messages_size,
+                messages.len()
+            );
+        }
+
+        // Debug print to show the content sizes and roles
+        if args.debug_llm_history {
+            debug!("Message History:");
+            for (i, message) in messages.iter().enumerate() {
+                debug!(
+                    "Message {} - Role: {}, Size: {}",
+                    i + 1,
+                    message.role,
+                    message.content.len()
+                );
+            }
+        }
+
+        // Setup mpsc channels for internal communication within the llm function
+        let (external_sender, mut external_receiver) = tokio::sync::mpsc::channel::<String>(32768);
+
+        let model_id = args.model_id.clone();
+
+        iterations += 1;
+
+        // Spawn a thread to run the LLM function, to keep the UI responsive streaming the response
+
+        // Capture the start time for performance metrics
+        let start = Instant::now();
+
+        let prompt = format_messages_for_llm(messages.clone(), args.chat_format.clone());
+
+        info!("\nPrompt: {}", prompt);
+
+        // Spawn a thread to run the mistral function, to keep the UI responsive
+        if args.candle_llm != "mistral" && args.candle_llm != "gemma" {
+            // exit if the LLM is not supported
+            error!("The specified LLM is not supported. Exiting...");
+            std::process::exit(1);
+        }
+
+        let messages_clone = messages.clone();
+        let llm_host_clone = llm_host.clone();
+        let llm_path_clone = args.llm_path.clone();
+        let model_clone = args.model.clone();
+
+        let prompt_clone = prompt.clone();
+        let llm_thread = if args.use_api || args.use_openai {
+            tokio::spawn(async move {
+                let open_ai_request = OpenAIRequest {
+                    model: &model_clone,
+                    max_tokens: &max_tokens,
+                    messages: messages_clone,
+                    temperature: &args.temperature,
+                    top_p: &args.top_p,
+                    presence_penalty: &args.presence_penalty,
+                    frequency_penalty: &args.frequency_penalty,
+                    stream: &(args.no_stream == false),
+                };
+
+                stream_completion(
+                    open_ai_request,
+                    &openai_key.clone(),
+                    &llm_host_clone,
+                    &llm_path_clone,
+                    args.debug_inline,
+                    args.show_output_errors,
+                    external_sender,
+                )
+                .await;
+            })
+        } else if args.candle_llm == "mistral" {
+            tokio::spawn(async move {
+                let mistral_clone = mistral.clone();
+                if let Err(e) = mistral_clone(
+                    prompt_clone,
+                    max_tokens as usize,
+                    args.temperature as f64,
+                    args.quantized,
+                    Some(model_id),
+                    external_sender,
+                ) {
+                    eprintln!("Error running mistral: {}", e);
+                }
+            })
+        } else {
+            tokio::spawn(async move {
+                let gemma_clone = gemma.clone();
+                if let Err(e) = gemma_clone(
+                    prompt_clone,
+                    max_tokens as usize,
+                    args.temperature as f64,
+                    args.quantized,
+                    Some(model_id),
+                    external_sender,
+                ) {
+                    eprintln!("Error running gemma: {}", e);
+                }
+            })
+        };
+
+        // Count tokens and collect output
+        let mut token_count = 0;
+        let mut terminal_token_len = 0;
+        let mut answers = Vec::new();
+        let mut paragraphs: Vec<String> = Vec::new();
+        let mut current_paragraph: Vec<String> = Vec::new();
+        let mut paragraph_count = 0;
+
+        // create uuid unique identifier for the output images
+        let output_id = Uuid::new_v4().simple().to_string(); // Generates a UUID and converts it to a simple, hyphen-free string
+
+        //  Initial repeat of the query sent to the pipeline
+        if ((!args.continuous && args.twitch_client && twitch_query)
+            || (args.twitch_client && twitch_query))
+            && args.sd_image
+            && (args.tts_enable || args.oai_tts || args.mimic3_tts)
+        {
+            let mut sd_config = SDConfig::new();
+            sd_config.prompt = query.clone();
+            // reduce prompt down to 300 characters max
+            if sd_config.prompt.len() > 300 {
