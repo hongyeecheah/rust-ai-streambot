@@ -1212,3 +1212,159 @@ async fn main() {
             sd_config.prompt = query.clone();
             // reduce prompt down to 300 characters max
             if sd_config.prompt.len() > 300 {
+                sd_config.prompt = sd_config.prompt.chars().take(300).collect();
+            }
+            // append "..." to the prompt if truncated
+            if query.len() > 300 {
+                sd_config.prompt.push_str("...");
+            }
+            sd_config.height = Some(args.sd_height);
+            sd_config.width = Some(args.sd_width);
+            sd_config.image_position = Some(args.image_alignment.clone());
+            sd_config.intermediary_images = args.sd_intermediary_images;
+            sd_config.custom_model = Some(args.sd_custom_model.clone());
+            // match args.sd_model with on of the strings "1.5", "2.1", "xl", "turbo" and set the sd_version accordingly
+            sd_config.sd_version = if args.sd_model == "1.5" {
+                StableDiffusionVersion::V1_5
+            } else if args.sd_model == "2.1" {
+                StableDiffusionVersion::V2_1
+            } else if args.sd_model == "xl" {
+                StableDiffusionVersion::Xl
+            } else if args.sd_model == "turbo" {
+                StableDiffusionVersion::Turbo
+            } else if args.sd_model == "Custom" {
+                StableDiffusionVersion::Custom
+            } else {
+                StableDiffusionVersion::V1_5
+            };
+            if args.sd_scaled_height > 0 {
+                sd_config.scaled_height = Some(args.sd_scaled_height);
+            }
+            if args.sd_scaled_width > 0 {
+                sd_config.scaled_width = Some(args.sd_scaled_width);
+            }
+            sd_config.n_steps = args.sd_n_steps;
+            // just send a message with the last_message field true to indicate the end of the response
+            let message_data_for_pipeline = MessageData {
+                paragraph: query.clone().to_string(),
+                output_id: output_id.clone(),
+                paragraph_count: total_paragraph_count,
+                sd_config,
+                mimic3_voice: args.mimic3_voice.to_string(),
+                subtitle_position: args.subtitle_position.to_string(),
+                args: args.clone(),
+                shutdown: false,
+                last_message: false,
+            };
+
+            // For pipeline task
+            pipeline_task_sender
+                .send(message_data_for_pipeline)
+                .await
+                .expect("Failed to send q/a audio/speech pipeline task");
+
+            total_paragraph_count += 1; // Increment paragraph count for the next paragraph
+        }
+
+        while let Some(received) = external_receiver.recv().await {
+            token_count += 1;
+            terminal_token_len += received.len();
+
+            // Store the received token
+            answers.push(received.clone());
+
+            // clean tts input
+            let tts_text = clean_tts_input(current_paragraph.join(""));
+
+            let token_len = count_tokens(&current_paragraph.join(""));
+            // If a newline is at the end of the token, process the accumulated paragraph for image generation
+            if !tts_text.await.is_empty()
+                && received.contains('\n')
+                && !current_paragraph.is_empty()
+                || (token_len as f32 > args.sd_max_length as f32 / 1.8
+                    && (received.contains('.')
+                        || received.contains('?')
+                        || received.contains('\n')
+                        || received.contains(']')
+                        || received.contains('!'))
+                    || (token_len >= (args.sd_max_length as f32) as usize
+                        && (received.contains(' '))))
+            {
+                debug!(
+                    "\nParagraph Token count: {} Character Count: {}",
+                    token_len,
+                    current_paragraph.join("").len()
+                );
+
+                // Join the current paragraph tokens into a single String without adding extra spaces
+                if !current_paragraph.is_empty() {
+                    // check if token has the new line character, split it at the new line into two parts, then put the first part onto
+                    // the current paragraph and the second part into the answers and current_paragraph later after we store the current paragraph
+                    // Safely handle split at the newline character
+                    let mut split_pos = received.len();
+                    let mut found_delimiter = false;
+                    for delimiter in ['\n', ',', '?', '!', ']'] {
+                        if let Some(pos) = received.find(delimiter) {
+                            // Adjust position to keep the delimiter with the first part, except for '\n'
+                            let end_pos = if delimiter == '\n' { pos } else { pos + 1 };
+                            split_pos = split_pos.min(end_pos);
+                            found_delimiter = true;
+                            break; // Break after finding the first delimiter
+                        }
+                    }
+                    // Handle '.' and ' ' delimiter separately
+                    if found_delimiter == false {
+                        if split_pos == received.len() {
+                            if let Some(pos) = received.find('.') {
+                                // Adjust position to keep the delimiter with the first part, except for '\n'
+                                let end_pos = pos + 1;
+                                split_pos = split_pos.min(end_pos);
+                            }
+                        } else if split_pos == received.len() {
+                            if let Some(pos) = received.find(' ') {
+                                // Adjust position to keep the delimiter with the first part, except for '\n'
+                                let end_pos = pos + 1;
+                                split_pos = split_pos.min(end_pos);
+                            }
+                        }
+                    }
+
+                    // Split 'received' at the determined position, handling '\n' specifically
+                    let (mut first, mut second) = received.split_at(split_pos);
+
+                    // If splitting on '\n', adjust 'first' and 'second' to not include '\n' in 'first'
+                    let mut nl: bool = false;
+                    if first.ends_with('\n') {
+                        first = &first[..first.len() - 1];
+                        nl = true;
+                    } else if second.starts_with('\n') {
+                        second = &second[1..];
+                        nl = true;
+                    }
+
+                    // Store the first part of the split token into the current paragraph
+                    current_paragraph.push(first.to_string());
+
+                    let paragraph_text = current_paragraph.join(""); // Join without spaces as indicated
+                    paragraphs.push(paragraph_text.clone());
+
+                    // Token output to stdout in real-time
+                    print!("{}", first);
+                    if nl {
+                        print!("\n");
+                        terminal_token_len = 0;
+                    } else if current_paragraph.len() >= 80 {
+                        print!("\n");
+                        terminal_token_len = 0;
+                    }
+                    std::io::stdout().flush().unwrap();
+
+                    // Clear current paragraph for the next one
+                    current_paragraph.clear(); // Clear current paragraph for the next one
+
+                    // Store the second part of the split token into the answers and current_paragraph
+                    current_paragraph.push(second.to_string());
+
+                    // ** Start of TTS and Image Generation **
+                    // Check if image generation or speech is enabled and proceed
+                    if args.sd_image || args.tts_enable || args.oai_tts || args.mimic3_tts {
