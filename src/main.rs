@@ -1368,3 +1368,160 @@ async fn main() {
                     // ** Start of TTS and Image Generation **
                     // Check if image generation or speech is enabled and proceed
                     if args.sd_image || args.tts_enable || args.oai_tts || args.mimic3_tts {
+                        // Clone necessary data for use in the async block
+                        let paragraph_clone = paragraphs[paragraph_count].clone();
+                        let output_id_clone = output_id.clone();
+                        let mimic3_voice = args.mimic3_voice.clone().to_string();
+                        let image_alignment = args.image_alignment.clone();
+                        let subtitle_position = args.subtitle_position.clone();
+                        let args = args.clone();
+
+                        let pipeline_task_sender_clone = pipeline_task_sender.clone();
+
+                        let mut sd_config = SDConfig::new();
+                        sd_config.prompt = paragraph_clone;
+                        sd_config.height = Some(args.sd_height);
+                        sd_config.width = Some(args.sd_width);
+                        sd_config.image_position = Some(image_alignment);
+                        sd_config.intermediary_images = args.sd_intermediary_images;
+                        sd_config.custom_model = Some(args.sd_custom_model.clone());
+                        if args.sd_scaled_height > 0 {
+                            sd_config.scaled_height = Some(args.sd_scaled_height);
+                        }
+                        if args.sd_scaled_width > 0 {
+                            sd_config.scaled_width = Some(args.sd_scaled_width);
+                        }
+                        // match args.sd_model with on of the strings "1.5", "2.1", "xl", "turbo" and set the sd_version accordingly
+                        sd_config.sd_version = if args.sd_model == "1.5" {
+                            StableDiffusionVersion::V1_5
+                        } else if args.sd_model == "2.1" {
+                            StableDiffusionVersion::V2_1
+                        } else if args.sd_model == "xl" {
+                            StableDiffusionVersion::Xl
+                        } else if args.sd_model == "turbo" {
+                            StableDiffusionVersion::Turbo
+                        } else if args.sd_model == "babes" {
+                            StableDiffusionVersion::Custom
+                        } else {
+                            StableDiffusionVersion::V1_5
+                        };
+                        sd_config.n_steps = args.sd_n_steps;
+
+                        let args_clone = args.clone();
+                        let mimic3_voice_clone = mimic3_voice.clone();
+                        let subtitle_position_clone = subtitle_position.clone();
+
+                        debug!("Generating images with prompt: {}", sd_config.prompt);
+
+                        // Create MessageData for image task
+                        let message_data_for_pipeline = MessageData {
+                            paragraph: sd_config.prompt.clone(),
+                            output_id: output_id_clone.clone(),
+                            paragraph_count: total_paragraph_count,
+                            sd_config: sd_config.clone(),
+                            mimic3_voice: mimic3_voice_clone.clone(),
+                            subtitle_position: subtitle_position_clone.clone(),
+                            args: args_clone.clone(),
+                            shutdown: false,
+                            last_message: false,
+                        };
+
+                        // For image tasks
+                        pipeline_task_sender_clone
+                            .send(message_data_for_pipeline)
+                            .await
+                            .expect("Failed to send image/speech pipeline task");
+
+                        total_paragraph_count += 1; // Increment paragraph count for the next paragraph
+                    }
+                    // ** End of TTS and Image Generation **
+
+                    // Token output to stdout in real-time
+                    print!("{}", second);
+                    std::io::stdout().flush().unwrap();
+
+                    paragraph_count += 1; // Increment paragraph count for the next paragraph
+                } else {
+                    // store the token in the current paragraph
+                    current_paragraph.push(received.clone());
+
+                    // Call the function to handle the string if it exceeds 80 characters
+                    handle_long_string(&received, &mut terminal_token_len);
+
+                    std::io::stdout().flush().unwrap();
+                }
+            } else {
+                // store the token in the current paragraph
+                current_paragraph.push(received.clone());
+
+                // Call the function to handle the string if it exceeds 80 characters
+                handle_long_string(&received, &mut terminal_token_len);
+
+                std::io::stdout().flush().unwrap();
+            }
+        }
+
+        // clean tts input
+        let tts_text = clean_tts_input(current_paragraph.join(""));
+
+        // Join the last paragraph tokens into a single String without adding extra spaces
+        if !tts_text.await.is_empty() && current_paragraph.len() > 0 {
+            // ** Start of TTS and Image Generation **
+            // Check if image generation is enabled and proceed
+            if args.sd_image || args.tts_enable || args.oai_tts || args.mimic3_tts {
+                // Clone necessary data for use in the async block
+                let paragraph_text = current_paragraph.join(""); // Join without spaces as indicated
+                let paragraph_clone = paragraph_text.clone();
+                let output_id_clone = output_id.clone();
+                let mimic3_voice = args.mimic3_voice.clone().to_string();
+                let image_alignment = args.image_alignment.clone();
+                let subtitle_position = args.subtitle_position.clone();
+                let args = args.clone();
+
+                let pipeline_task_sender_clone = pipeline_task_sender.clone();
+
+                let mut sd_config = SDConfig::new();
+                sd_config.prompt = paragraph_clone;
+                sd_config.height = Some(args.sd_height);
+                sd_config.width = Some(args.sd_width);
+                sd_config.image_position = Some(image_alignment);
+                sd_config.intermediary_images = args.sd_intermediary_images;
+                sd_config.custom_model = Some(args.sd_custom_model.clone());
+                if args.sd_scaled_height > 0 {
+                    sd_config.scaled_height = Some(args.sd_scaled_height);
+                }
+                if args.sd_scaled_width > 0 {
+                    sd_config.scaled_width = Some(args.sd_scaled_width);
+                }
+                // match args.sd_model with on of the strings "1.5", "2.1", "xl", "turbo" and set the sd_version accordingly
+                sd_config.sd_version = if args.sd_model == "1.5" {
+                    StableDiffusionVersion::V1_5
+                } else if args.sd_model == "2.1" {
+                    StableDiffusionVersion::V2_1
+                } else if args.sd_model == "xl" {
+                    StableDiffusionVersion::Xl
+                } else if args.sd_model == "turbo" {
+                    StableDiffusionVersion::Turbo
+                } else if args.sd_model == "babes" {
+                    StableDiffusionVersion::Custom
+                } else {
+                    StableDiffusionVersion::V1_5
+                };
+                sd_config.n_steps = args.sd_n_steps;
+
+                let args_clone = args.clone();
+                let mimic3_voice_clone = mimic3_voice.clone();
+                let subtitle_position_clone = subtitle_position.clone();
+
+                // Create MessageData for pipeline task
+                let message_data_for_pipeline = MessageData {
+                    paragraph: sd_config.prompt.clone(), // Clone for the image task
+                    output_id: output_id_clone.clone(),
+                    paragraph_count: total_paragraph_count,
+                    sd_config: sd_config.clone(), // Assuming SDConfig is set up previously and is cloneable
+                    mimic3_voice: mimic3_voice_clone.clone(),
+                    subtitle_position: subtitle_position_clone.clone(),
+                    args: args_clone.clone(),
+                    shutdown: false,
+                    last_message: false,
+                };
