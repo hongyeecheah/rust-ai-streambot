@@ -1525,3 +1525,137 @@ async fn main() {
                     shutdown: false,
                     last_message: false,
                 };
+
+                // For pipeline task
+                pipeline_task_sender_clone
+                    .send(message_data_for_pipeline)
+                    .await
+                    .expect("Failed to send last audio/speech pipeline task");
+
+                total_paragraph_count += 1; // Increment paragraph count for the next paragraph
+            }
+            // ** End of TTS and Image Generation **
+            paragraph_count += 1; // Increment paragraph count for the next paragraph
+        }
+
+        // End of the response message to the pipeline
+        if args.sd_image || args.tts_enable || args.oai_tts || args.mimic3_tts {
+            let mut sd_config = SDConfig::new();
+            sd_config.prompt = args.greeting.clone();
+            sd_config.height = Some(args.sd_height);
+            sd_config.width = Some(args.sd_width);
+            sd_config.image_position = Some(args.image_alignment.clone());
+            sd_config.intermediary_images = args.sd_intermediary_images;
+            sd_config.custom_model = Some(args.sd_custom_model.clone());
+            if args.sd_scaled_height > 0 {
+                sd_config.scaled_height = Some(args.sd_scaled_height);
+            }
+            if args.sd_scaled_width > 0 {
+                sd_config.scaled_width = Some(args.sd_scaled_width);
+            }
+            // match args.sd_model with on of the strings "1.5", "2.1", "xl", "turbo" and set the sd_version accordingly
+            sd_config.sd_version = if args.sd_model == "1.5" {
+                StableDiffusionVersion::V1_5
+            } else if args.sd_model == "2.1" {
+                StableDiffusionVersion::V2_1
+            } else if args.sd_model == "xl" {
+                StableDiffusionVersion::Xl
+            } else if args.sd_model == "turbo" {
+                StableDiffusionVersion::Turbo
+            } else if args.sd_model == "babes" {
+                StableDiffusionVersion::Custom
+            } else {
+                StableDiffusionVersion::V1_5
+            };
+            sd_config.n_steps = args.sd_n_steps;
+            // just send a message with the last_message field true to indicate the end of the response
+            let message_data_for_pipeline = MessageData {
+                paragraph: args.greeting.to_string(),
+                output_id: output_id.clone(),
+                paragraph_count: total_paragraph_count,
+                sd_config,
+                mimic3_voice: args.mimic3_voice.to_string(),
+                subtitle_position: args.subtitle_position.to_string(),
+                args: args.clone(),
+                shutdown: false,
+                last_message: true,
+            };
+
+            // For pipeline task
+            pipeline_task_sender
+                .send(message_data_for_pipeline)
+                .await
+                .expect("Failed to send last audio/speech pipeline task");
+
+            total_paragraph_count += 1; // Increment paragraph count for the next paragraph
+        }
+
+        if loglevel != "error" {
+            println!("\n");
+            std::io::stdout().flush().unwrap();
+        }
+        info!("Waiting for LLM thread to finish...");
+        // Wait for the LLM thread to finish
+        llm_thread.await.unwrap();
+        info!("LLM thread finished.");
+
+        // Calculate elapsed time and tokens per second
+        let elapsed = start.elapsed().as_secs_f64();
+        let tokens_per_second = token_count as f64 / elapsed;
+
+        let answers_str = answers.join("").to_string();
+
+        println!("\n=======================================");
+        println!(
+            "#[{}] ({}) {}/{}/{} imgs/tkns/chrs in {:.2?}s @ {:.2}tps",
+            iterations,
+            output_id,
+            paragraph_count,
+            token_count,
+            answers_str.len(),
+            elapsed,
+            tokens_per_second
+        );
+        println!("============= END RESPONSE ============");
+
+        // check if we got any tokens, if not clear and reset message history
+        if token_count == 0 {
+            messages.clear();
+            messages.push(system_message.clone());
+        } else {
+            // add answers to the messages as an assistant role message with the content
+            messages.push(Message {
+                role: "assistant".to_string(),
+                content: answers_str.clone(),
+            });
+        }
+
+        #[cfg(feature = "ndi")]
+        if !args.async_concurrency
+            && (args.sd_image || args.tts_enable || args.oai_tts || args.mimic3_tts)
+        {
+            // set a timer to wait for the NDI done signal only so long then if not sent then continue
+            //let ndi_done_rx = ndi_done_rx.clone();
+            let ndi_done_timeout =
+                tokio::time::timeout(std::time::Duration::from_secs(args.ndi_timeout), async {
+                    // Wait for the NDI done signal
+                    std::io::stdout().flush().unwrap();
+                    info!(
+                        "Waiting for NDI done signal for LLM message {}...",
+                        total_paragraph_count - 1
+                    );
+                    ndi_done_rx.recv().await;
+                    info!("Received NDI done signal.");
+                });
+            match ndi_done_timeout.await {
+                Ok(_) => {
+                    info!("NDI done signal received.");
+                }
+                Err(_) => {
+                    info!("NDI done signal timeout.");
+                }
+            }
+        }
+        poll_end_time = Instant::now();
+    }
+}
