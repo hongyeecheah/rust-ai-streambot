@@ -217,3 +217,157 @@ impl Scte35StreamConsumer {
                     "Program {:?}: {:?} has type {:?}, but PMT lacks 'CUEI' registration_descriptor that would indicate SCTE-35 content",
                     program_pid,
                     stream_info.elementary_pid(),
+                    stream_info.stream_type()
+                );
+            }
+            DumpFilterSwitch::Null(demultiplex::NullPacketFilter::default())
+        }
+    }
+}
+impl demultiplex::PacketFilter for Scte35StreamConsumer {
+    type Ctx = DumpDemuxContext;
+    fn consume(&mut self, ctx: &mut Self::Ctx, pk: &packet::Packet<'_>) {
+        self.section.consume(ctx, pk);
+    }
+}
+
+pub struct PcrWatch(Rc<cell::Cell<Option<packet::ClockRef>>>);
+impl demultiplex::PacketFilter for PcrWatch {
+    type Ctx = DumpDemuxContext;
+    fn consume(&mut self, _ctx: &mut Self::Ctx, pk: &packet::Packet<'_>) {
+        if let Some(af) = pk.adaptation_field() {
+            if let Ok(pcr) = af.pcr() {
+                self.0.set(Some(pcr));
+                if DEBUG_PCR {
+                    info!("Got PCR: {:?}", pcr);
+                }
+            }
+        }
+    }
+}
+
+mpeg2ts_reader::packet_filter_switch! {
+    DumpFilterSwitch<DumpDemuxContext> {
+        Pat: demultiplex::PatPacketFilter<DumpDemuxContext>,
+        Pes: pes::PesPacketFilter<DumpDemuxContext,PtsDumpElementaryStreamConsumer>,
+        Pmt: demultiplex::PmtPacketFilter<DumpDemuxContext>,
+        Null: demultiplex::NullPacketFilter<DumpDemuxContext>,
+        Scte35: Scte35StreamConsumer,
+        Pcr: PcrWatch,
+    }
+}
+pub struct DumpDemuxContext {
+    changeset: demultiplex::FilterChangeset<DumpFilterSwitch>,
+    last_pcrs: HashMap<packet::Pid, Rc<cell::Cell<Option<packet::ClockRef>>>>,
+}
+impl DumpDemuxContext {
+    pub fn new() -> Self {
+        DumpDemuxContext {
+            changeset: demultiplex::FilterChangeset::default(),
+            last_pcrs: HashMap::new(),
+        }
+    }
+    pub fn last_pcr(&self, program_pid: packet::Pid) -> Rc<cell::Cell<Option<packet::ClockRef>>> {
+        self.last_pcrs
+            .get(&program_pid)
+            .expect("last_pcrs entry didn't exist on call to last_pcr()")
+            .clone()
+    }
+}
+impl demultiplex::DemuxContext for DumpDemuxContext {
+    type F = DumpFilterSwitch;
+
+    fn filter_changeset(&mut self) -> &mut demultiplex::FilterChangeset<Self::F> {
+        &mut self.changeset
+    }
+
+    fn construct(&mut self, req: demultiplex::FilterRequest<'_, '_>) -> Self::F {
+        match req {
+            demultiplex::FilterRequest::ByPid(packet::Pid::PAT) => {
+                DumpFilterSwitch::Pat(demultiplex::PatPacketFilter::default())
+            }
+            // 'Stuffing' data on PID 0x1fff may be used to pad-out parts of the transport stream
+            // so that it has constant overall bitrate.  This causes it to be ignored if present.
+            demultiplex::FilterRequest::ByPid(mpeg2ts_reader::STUFFING_PID) => {
+                DumpFilterSwitch::Null(demultiplex::NullPacketFilter::default())
+            }
+            // This match-arm installs our application-specific handling for each H264 stream
+            // discovered within the transport stream,
+            demultiplex::FilterRequest::ByStream {
+                stream_type: StreamType::H264,
+                pmt,
+                stream_info,
+                ..
+            } => PtsDumpElementaryStreamConsumer::construct(pmt, stream_info),
+            demultiplex::FilterRequest::ByStream {
+                program_pid,
+                stream_type: scte35_reader::SCTE35_STREAM_TYPE,
+                pmt,
+                stream_info,
+            } => Scte35StreamConsumer::construct(
+                self.last_pcr(program_pid),
+                program_pid,
+                pmt,
+                stream_info,
+            ),
+            demultiplex::FilterRequest::ByStream { program_pid, .. } => {
+                DumpFilterSwitch::Pcr(PcrWatch(self.last_pcr(program_pid)))
+            }
+            demultiplex::FilterRequest::Pmt {
+                pid,
+                program_number,
+            } => {
+                // prepare structure needed to print PCR values later on
+                self.last_pcrs.insert(pid, Rc::new(cell::Cell::new(None)));
+                DumpFilterSwitch::Pmt(demultiplex::PmtPacketFilter::new(pid, program_number))
+            }
+            demultiplex::FilterRequest::Nit { .. } => {
+                DumpFilterSwitch::Null(demultiplex::NullPacketFilter::default())
+            }
+            demultiplex::FilterRequest::ByPid(_) => {
+                DumpFilterSwitch::Null(demultiplex::NullPacketFilter::default())
+            }
+        }
+    }
+}
+
+// Implement the ElementaryStreamConsumer to just dump and PTS/DTS timestamps to stdout
+pub struct PtsDumpElementaryStreamConsumer {
+    pid: packet::Pid,
+    len: Option<usize>,
+}
+impl PtsDumpElementaryStreamConsumer {
+    fn construct(
+        _pmt_sect: &psi::pmt::PmtSection,
+        stream_info: &psi::pmt::StreamInfo,
+    ) -> DumpFilterSwitch {
+        let filter = pes::PesPacketFilter::new(PtsDumpElementaryStreamConsumer {
+            pid: stream_info.elementary_pid(),
+            len: None,
+        });
+        DumpFilterSwitch::Pes(filter)
+    }
+}
+impl pes::ElementaryStreamConsumer<DumpDemuxContext> for PtsDumpElementaryStreamConsumer {
+    fn start_stream(&mut self, _ctx: &mut DumpDemuxContext) {}
+    fn begin_packet(&mut self, _ctx: &mut DumpDemuxContext, header: pes::PesHeader) {
+        match header.contents() {
+            pes::PesContents::Parsed(Some(parsed)) => {
+                if DEBUG_PTS {
+                    match parsed.pts_dts() {
+                        Ok(pes::PtsDts::PtsOnly(Ok(pts))) => {
+                            print!("{:?}: pts {:#08x}                ", self.pid, pts.value())
+                        }
+                        Ok(pes::PtsDts::Both {
+                            pts: Ok(pts),
+                            dts: Ok(dts),
+                        }) => print!(
+                            "{:?}: pts {:#08x} dts {:#08x} ",
+                            self.pid,
+                            pts.value(),
+                            dts.value()
+                        ),
+                        _ => (),
+                    }
+                }
+                let payload = parsed.payload();
