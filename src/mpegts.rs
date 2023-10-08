@@ -535,3 +535,172 @@ pub fn reader_thread(debug_nal_types: String, debug_nals: bool) {
                                         }
                                         if !captions_cc2.is_empty() {
                                             debug!("CEA-608 CC2 Captions: {:?}", captions_cc2);
+                                        }
+                                        if !xds_data.is_empty() {
+                                            debug!("CEA-608 XDS Data: {:?}", xds_data);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Error parsing ITU T.35 data: {:?}", e);
+                                }
+                            }
+                        }
+                        h264_reader::nal::sei::HeaderType::UserDataUnregistered => {
+                            // Check if debug_nal_types has user_data_unregistered or all
+                            if debug_nal_types.contains(&"user_data_unregistered".to_string())
+                                || debug_nal_types.contains(&"all".to_string())
+                            {
+                                println!(
+                                    "Found SEI type UserDataUnregistered {:?} payload: [{:?}]",
+                                    msg.payload_type, msg.payload
+                                );
+                            }
+                        }
+                        _ => {
+                            // check if debug_nal_types has sei
+                            if debug_nal_types.contains(&"sei".to_string())
+                                || debug_nal_types.contains(&"all".to_string())
+                            {
+                                println!(
+                                    "Unknown Found SEI type {:?} payload: [{:?}]",
+                                    msg.payload_type, msg.payload
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            UnitType::SliceLayerWithoutPartitioningIdr
+            | UnitType::SliceLayerWithoutPartitioningNonIdr => {
+                let msg = slice::SliceHeader::from_bits(&ctx, &mut nal.rbsp_bits(), hdr);
+                // check if debug_nal_types has slice
+                if debug_nal_types.contains(&"slice".to_string())
+                    || debug_nal_types.contains(&"all".to_string())
+                {
+                    println!("Found NAL Slice: {:?}", msg);
+                }
+            }
+            _ => {
+                // check if debug_nal_types has nal
+                if debug_nal_types.contains(&"unknown".to_string())
+                    || debug_nal_types.contains(&"all".to_string())
+                {
+                    println!("Found Unknown NAL: {:?}", nal);
+                }
+            }
+        }
+        NalInterest::Buffer
+    });
+
+    // Running a synchronous task in the background
+    let running_demuxer_clone = running_demuxer.clone();
+    task::spawn_blocking(move || {
+        let mut demux_ctx = DumpDemuxContext::new();
+        let mut demux = demultiplex::Demultiplex::new(&mut demux_ctx);
+        let mut demux_buf = [0u8; 1880 * 1024];
+        let mut buf_end = 0;
+
+        while running_demuxer_clone.load(Ordering::SeqCst) {
+            match sync_dmrx.blocking_recv() {
+                Some(packet) => {
+                    let packet_len = packet.len();
+                    let space_left = demux_buf.len() - buf_end;
+
+                    if space_left < packet_len {
+                        buf_end = 0; // Reset buffer on overflow
+                    }
+
+                    demux_buf[buf_end..buf_end + packet_len].copy_from_slice(&packet);
+                    buf_end += packet_len;
+
+                    /*info!("Demuxer push packet of size: {}", packet_len);
+                    let packet_arc = Arc::new(packet);
+                    hexdump(&packet_arc, 0, packet_len);*/
+                    demux.push(&mut demux_ctx, &demux_buf[0..buf_end]);
+                    // Additional processing as required
+                }
+                None => {
+                    // Handle error or shutdown
+                    break;
+                }
+            }
+        }
+    });
+
+    // Spawn a new thread for Decoder communication
+    let _decoder_thread = tokio::spawn(async move {
+        loop {
+            if !running_decoder.load(Ordering::SeqCst) {
+                debug!("Decoder thread received stop signal.");
+                break;
+            }
+
+            if !mpegts_reader && !decode_video {
+                // Sleep for a short duration to prevent a tight loop
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                continue;
+            }
+
+            // Use tokio::select to simultaneously wait for a new batch or a stop signal
+            tokio::select! {
+                Some(mut batch) = drx.recv() => {
+                    debug!("Processing {} video packets in decoder thread", batch.len());
+                    for stream_data in &batch {
+                        // packet is a subset of the original packet, starting at the payload
+                        let packet_start = stream_data.packet_start;
+                        let packet_end = stream_data.packet_start + stream_data.packet_len;
+
+                        if packet_end - packet_start > packet_size {
+                            error!("NAL Parser: Packet size {} is larger than packet buffer size {}. Skipping packet.",
+                                packet_end - packet_start, packet_size);
+                            continue;
+                        }
+
+                        // check if packet_start + 4 is less than packet_end
+                        if packet_start + 4 >= packet_end {
+                            error!("NAL Parser: Packet size {} {} - {} is less than 4 bytes. Skipping packet.",
+                                packet_end - packet_start, packet_start, packet_end);
+                            continue;
+                        }
+
+                        if mpegts_reader {
+                            // Send packet data to the synchronous processing thread
+                            dmtx.send(stream_data.packet[packet_start..packet_end].to_vec()).await.unwrap();
+
+                            // check if we are decoding video
+                            if !decode_video {
+                                continue;
+                            }
+                        }
+
+                        // Skip MPEG-TS header and adaptation field
+                        let header_len = 4;
+                        let adaptation_field_control = (stream_data.packet[packet_start + 3] & 0b00110000) >> 4;
+
+                        if adaptation_field_control == 0b10 {
+                            continue; // Skip packets with only adaptation field (no payload)
+                        }
+
+                        let payload_start = if adaptation_field_control != 0b01 {
+                            header_len + 1 + stream_data.packet[packet_start + 4] as usize
+                        } else {
+                            header_len
+                        };
+
+                        // confirm payload_start is sane
+                        if payload_start >= packet_end || packet_end - payload_start < 4 {
+                            error!("NAL Parser: Payload start {} is invalid with packet_start as {} and packet_end as {}. Skipping packet.",
+                                payload_start, packet_start, packet_end);
+                            continue;
+                        } else {
+                            debug!("NAL Parser: Payload start {} is valid with packet_start as {} and packet_end as {}.",
+                                payload_start, packet_start, packet_end);
+                        }
+
+                        // Process payload, skipping padding bytes
+                        let mut pos = payload_start;
+                        while pos + 4 < packet_end {
+                            if parse_short_nals && stream_data.packet[pos..pos + 3] == [0x00, 0x00, 0x01] {
+                                let nal_start = pos;
+                                pos += 3; // Move past the short start code
