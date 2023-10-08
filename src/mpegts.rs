@@ -371,3 +371,167 @@ impl pes::ElementaryStreamConsumer<DumpDemuxContext> for PtsDumpElementaryStream
                     }
                 }
                 let payload = parsed.payload();
+                self.len = Some(payload.len());
+                if DEBUG_PAYLOAD {
+                    println!(
+                        "{:02x}",
+                        payload[..cmp::min(payload.len(), 16)].plain_hex(false)
+                    )
+                } else if DEBUG_PTS {
+                    println!()
+                }
+            }
+            pes::PesContents::Parsed(None) => (),
+            pes::PesContents::Payload(payload) => {
+                self.len = Some(payload.len());
+                if DEBUG_PES {
+                    println!(
+                        "{:?}:                               {:02x}",
+                        self.pid,
+                        payload[..cmp::min(payload.len(), 16)].plain_hex(false)
+                    )
+                }
+            }
+        }
+    }
+    fn continue_packet(&mut self, _ctx: &mut DumpDemuxContext, data: &[u8]) {
+        if DEBUG_PAYLOAD {
+            println!(
+                "{:?}:                     continues {:02x}",
+                self.pid,
+                data[..cmp::min(data.len(), 16)].plain_hex(false)
+            )
+        }
+        self.len = self.len.map(|l| l + data.len());
+    }
+    fn end_packet(&mut self, _ctx: &mut DumpDemuxContext) {
+        if DEBUG_PAYLOAD {
+            println!("{:?}: end of packet length={:?}", self.pid, self.len);
+        }
+    }
+    fn continuity_error(&mut self, _ctx: &mut DumpDemuxContext) {}
+}
+
+pub fn reader_thread(debug_nal_types: String, debug_nals: bool) {
+    let demuxer_channel_size = 10000;
+    let decoder_channel_size = 10000;
+    let mut ctx = Context::default();
+    let mut scratch = Vec::new();
+    let running = Arc::new(AtomicBool::new(true));
+    let running_decoder = running.clone();
+    let running_demuxer = running.clone();
+    // Setup demuxer async processing thread
+    let (_dtx, mut drx) = mpsc::channel::<Vec<StreamData>>(decoder_channel_size);
+    let (dmtx, _dmrx) = mpsc::channel::<Vec<u8>>(demuxer_channel_size);
+    // Setup asynchronous demuxer processing thread
+    let (_sync_dmtx, mut sync_dmrx) = mpsc::channel::<Vec<u8>>(demuxer_channel_size);
+    let parse_short_nals = true;
+    let decode_video = true;
+    let mpegts_reader = true;
+    let packet_size = 188;
+
+    // Use the `move` keyword to move ownership of `ctx` and `scratch` into the closure
+    let mut annexb_reader = AnnexBReader::accumulate(move |nal: RefNal<'_>| {
+        if !nal.is_complete() {
+            return NalInterest::Buffer;
+        }
+        let hdr = match nal.header() {
+            Ok(h) => h,
+            Err(e) => {
+                // check if we are in debug mode for nals, else check if this is a ForbiddenZeroBit error, which we ignore
+                let e_str = format!("{:?}", e);
+                if !debug_nals && e_str == "ForbiddenZeroBit" {
+                    // ignore forbidden zero bit error unless we are in debug mode
+                } else {
+                    // show nal contents
+                    debug!("---\n{:?}\n---", nal);
+                    error!("Failed to parse NAL header: {:?}", e);
+                }
+                return NalInterest::Buffer;
+            }
+        };
+        match hdr.nal_unit_type() {
+            UnitType::SeqParameterSet => {
+                if let Ok(sps) = sps::SeqParameterSet::from_bits(nal.rbsp_bits()) {
+                    // check if debug_nal_types has sps
+                    if debug_nal_types.contains(&"sps".to_string())
+                        || debug_nal_types.contains(&"all".to_string())
+                    {
+                        println!("Found SPS: {:?}", sps);
+                    }
+                    ctx.put_seq_param_set(sps);
+                }
+            }
+            UnitType::PicParameterSet => {
+                if let Ok(pps) = pps::PicParameterSet::from_bits(&ctx, nal.rbsp_bits()) {
+                    // check if debug_nal_types has pps
+                    if debug_nal_types.contains(&"pps".to_string())
+                        || debug_nal_types.contains(&"all".to_string())
+                    {
+                        println!("Found PPS: {:?}", pps);
+                    }
+                    ctx.put_pic_param_set(pps);
+                }
+            }
+            UnitType::SEI => {
+                let mut r = sei::SeiReader::from_rbsp_bytes(nal.rbsp_bytes(), &mut scratch);
+                while let Ok(Some(msg)) = r.next() {
+                    match msg.payload_type {
+                        sei::HeaderType::PicTiming => {
+                            let sps = match ctx.sps().next() {
+                                Some(s) => s,
+                                None => continue,
+                            };
+                            let pic_timing = sei::pic_timing::PicTiming::read(sps, &msg);
+                            match pic_timing {
+                                Ok(pic_timing_data) => {
+                                    // Check if debug_nal_types has pic_timing or all
+                                    if debug_nal_types.contains(&"pic_timing".to_string())
+                                        || debug_nal_types.contains(&"all".to_string())
+                                    {
+                                        println!("Found PicTiming: {:?}", pic_timing_data);
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Error parsing PicTiming SEI: {:?}", e);
+                                }
+                            }
+                        }
+                        h264_reader::nal::sei::HeaderType::BufferingPeriod => {
+                            let sps = match ctx.sps().next() {
+                                Some(s) => s,
+                                None => continue,
+                            };
+                            let buffering_period =
+                                sei::buffering_period::BufferingPeriod::read(&ctx, &msg);
+                            // check if debug_nal_types has buffering_period
+                            if debug_nal_types.contains(&"buffering_period".to_string())
+                                || debug_nal_types.contains(&"all".to_string())
+                            {
+                                println!(
+                                    "Found BufferingPeriod: {:?} Payload: [{:?}] - {:?}",
+                                    buffering_period, msg.payload, sps
+                                );
+                            }
+                        }
+                        h264_reader::nal::sei::HeaderType::UserDataRegisteredItuTT35 => {
+                            match sei::user_data_registered_itu_t_t35::ItuTT35::read(&msg) {
+                                Ok((itu_t_t35_data, remaining_data)) => {
+                                    if debug_nal_types
+                                        .contains(&"user_data_registered_itu_tt35".to_string())
+                                        || debug_nal_types.contains(&"all".to_string())
+                                    {
+                                        println!("Found UserDataRegisteredItuTT35: {:?}, Remaining Data: {:?}", itu_t_t35_data, remaining_data);
+                                    }
+                                    if is_cea_608(&itu_t_t35_data) {
+                                        let (captions_cc1, captions_cc2, xds_data) =
+                                            decode_cea_608(remaining_data);
+                                        debug!(
+                                            "CEA-608 Data: {:?} cc1: {:?} cc2: {:?} xds: {:?}",
+                                            itu_t_t35_data, captions_cc1, captions_cc2, xds_data
+                                        );
+                                        if !captions_cc1.is_empty() {
+                                            debug!("CEA-608 CC1 Captions: {:?}", captions_cc1);
+                                        }
+                                        if !captions_cc2.is_empty() {
+                                            debug!("CEA-608 CC2 Captions: {:?}", captions_cc2);
