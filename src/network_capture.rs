@@ -189,3 +189,172 @@ fn init_pcap(
         .find(|d| {
             (d.name == source_device || source_device.is_empty())
                 && d.flags.is_up()
+                && !d.flags.is_loopback()
+                && d.flags.is_running()
+                && (!d.flags.is_wireless() || use_wireless)
+        })
+        .ok_or_else(|| Box::new(DeviceNotFoundError) as Box<dyn StdError>)?;
+
+    // Get the IP address of the target device
+    let interface_addr = target_device
+        .addresses
+        .iter()
+        .find_map(|addr| match addr.addr {
+            IpAddr::V4(ipv4_addr) => Some(ipv4_addr),
+            _ => None,
+        })
+        .ok_or_else(|| "No valid IPv4 address found for target device")?;
+
+    let multicast_addr = source_ip
+        .parse::<Ipv4Addr>()
+        .expect("Invalid IP address format for source_ip");
+
+    info!(
+        "init_pcap: UDP Socket Binding to interface {} with Join IGMP Multicast for address:port udp://{}:{}.",
+        interface_addr, multicast_addr, source_port
+    );
+
+    let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| Box::new(e) as Box<dyn StdError>)?;
+    socket
+        .join_multicast_v4(&multicast_addr, &interface_addr)
+        .map_err(|e| Box::new(e) as Box<dyn StdError>)?;
+
+    let source_host_and_port = format!(
+        "{} dst port {} and ip dst host {}",
+        source_protocol, source_port, source_ip
+    );
+
+    let cap = Capture::from_device(target_device.clone())
+        .map_err(|e| Box::new(e) as Box<dyn StdError>)?
+        .promisc(promiscuous)
+        .timeout(read_time_out)
+        .snaplen(read_size)
+        .immediate_mode(immediate_mode)
+        .buffer_size(buffer_size as i32)
+        .open()
+        .map_err(|e| Box::new(e) as Box<dyn StdError>)?;
+
+    info!(
+        "init_pcap: set non-blocking mode on capture device {}",
+        target_device.name
+    );
+
+    let mut cap = cap
+        .setnonblock()
+        .map_err(|e| Box::new(e) as Box<dyn StdError>)?;
+
+    info!(
+        "init_pcap: set filter for {} on capture device {}",
+        source_host_and_port, target_device.name
+    );
+
+    cap.filter(&source_host_and_port, true)
+        .map_err(|e| Box::new(e) as Box<dyn StdError>)?;
+
+    info!(
+        "init_pcap: capture device {} successfully initialized",
+        target_device.name
+    );
+
+    Ok((cap, socket))
+}
+
+pub struct NetworkCapture {
+    pub running: Arc<AtomicBool>,
+    pub source_ip: Arc<String>,
+    pub source_protocol: Arc<String>,
+    pub source_device: Arc<String>,
+    pub source_port: i32,
+    pub use_wireless: bool,
+    pub promiscuous: bool,
+    pub read_time_out: i32,
+    pub read_size: i32,
+    pub immediate_mode: bool,
+    pub buffer_size: i64,
+    pub dpdk: bool,
+    pub pcap_stats: bool,
+    pub debug_on: bool,
+    pub capture_task: Option<JoinHandle<()>>,
+}
+
+pub fn network_capture(network_capture: &mut NetworkCapture, ptx: mpsc::Sender<Arc<Vec<u8>>>) {
+    let running = Arc::new(AtomicBool::new(true));
+    let running_capture = running.clone();
+
+    let use_wireless = network_capture.use_wireless;
+    let promiscuous = network_capture.promiscuous;
+    let read_time_out = network_capture.read_time_out;
+    let read_size = network_capture.read_size;
+    let immediate_mode = network_capture.immediate_mode;
+    let buffer_size = network_capture.buffer_size;
+    let source_port = network_capture.source_port;
+    let source_protocol = Arc::clone(&network_capture.source_protocol);
+    let source_ip = Arc::clone(&network_capture.source_ip);
+    let source_device = Arc::clone(&network_capture.source_device);
+    let dpdk = network_capture.dpdk;
+    let pcap_stats = network_capture.pcap_stats;
+    let debug_on = network_capture.debug_on;
+
+    // Spawn a new thread for packet capture
+    let capture_task = if cfg!(feature = "dpdk_enabled") && dpdk {
+        // DPDK is enabled
+        tokio::spawn(async move {
+            let port_id = 0; // Set your port ID
+            let promiscuous_mode = promiscuous;
+
+            // Initialize DPDK
+            let port = match init_dpdk(port_id, promiscuous_mode) {
+                Ok(p) => p,
+                Err(e) => {
+                    error!("Failed to initialize DPDK: {:?}", e);
+                    return;
+                }
+            };
+
+            // Start packet capture
+            let _ = port.start();
+
+            let mut packets = Vec::new();
+            while running_capture.load(Ordering::SeqCst) {
+                match port.rx_burst(&mut packets) {
+                    Ok(_) => {
+                        for packet in packets.drain(..) {
+                            // Extract data from the packet
+                            let data = packet.data();
+
+                            // Convert to Arc<Vec<u8>> to maintain consistency with pcap logic
+                            let packet_data = Arc::new(data.to_vec());
+
+                            // Send packet data to processing channel
+                            ptx.send(packet_data).await.unwrap();
+
+                            // Here you can implement additional processing such as parsing the packet,
+                            // updating statistics, handling specific packet types, etc.
+                        }
+                    }
+                    Err(e) => {
+                        error!("Error fetching packets: {:?}", e);
+                        break;
+                    }
+                }
+            }
+
+            // Cleanup
+            // Handle stopping the port
+            if let Err(e) = port.stop() {
+                error!("Error stopping DPDK port: {:?}", e);
+            }
+        })
+    } else {
+        tokio::spawn(async move {
+            // initialize the pcap
+            let (cap, _socket) = init_pcap(
+                source_device.as_str(),
+                use_wireless,
+                promiscuous,
+                read_time_out,
+                read_size,
+                immediate_mode,
+                buffer_size as i64,
+                source_protocol.as_str(),
+                source_port,
