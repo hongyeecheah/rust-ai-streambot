@@ -704,3 +704,125 @@ pub fn reader_thread(debug_nal_types: String, debug_nals: bool) {
                             if parse_short_nals && stream_data.packet[pos..pos + 3] == [0x00, 0x00, 0x01] {
                                 let nal_start = pos;
                                 pos += 3; // Move past the short start code
+
+                                // Search for the next start code
+                                while pos + 4 <= packet_end &&
+                                      stream_data.packet[pos..pos + 4] != [0x00, 0x00, 0x00, 0x01] {
+                                    // Check for short start code, 0xff padding, or 0x00000000 sequence
+                                    if stream_data.packet[pos..pos + 3] == [0x00, 0x00, 0x01] && pos > nal_start + 3 {
+                                        // Found a short start code, so back up and process the NAL unit
+                                        break;
+                                    } else if stream_data.packet[pos + 1] == 0xff && pos > nal_start + 3 {
+                                        // check for 0xff padding and that we are at least 2 bytes into the nal
+                                        break;
+                                    } else if stream_data.packet[pos..pos + 3] == [0x00, 0x00, 0x00] && pos > nal_start + 3 {
+                                        // check for 0x00 0x00 0x00 0x00 sequence to stop at
+                                        break;
+                                    }
+                                    pos += 1;
+                                }
+
+                                // check if we only have 4 bytes left in the packet, if so then collect them too
+                                if pos + 4 >= packet_end {
+                                    while pos < packet_end {
+                                        if stream_data.packet[pos..pos + 1] == [0xff] {
+                                            // check for 0xff padding and that we are at least 2 bytes into the nal
+                                            break;
+                                        } else if pos + 2 < packet_end && stream_data.packet[pos..pos + 2] == [0x00, 0x00] {
+                                            // check for 0x00 0x00 sequence to stop at
+                                            break;
+                                        }
+                                        pos += 1;
+                                    }
+                                }
+
+                                let nal_end = pos; // End of NAL unit found or end of packet
+                                if nal_end - nal_start > 3 { // Threshold for significant NAL unit size
+                                    let nal_unit = &stream_data.packet[nal_start..nal_end];
+
+                                    // Debug print the NAL unit
+                                    if debug_nals {
+                                        let packet_len = nal_end - nal_start;
+                                        info!("Extracted {} byte Short NAL Unit from packet range {}-{}:", packet_len, nal_start, nal_end);
+                                        let nal_unit_arc = Arc::new(nal_unit.to_vec());
+                                        hexdump(&nal_unit_arc, 0, packet_len);
+                                    }
+
+                                    // Process the NAL unit
+                                    annexb_reader.push(nal_unit);
+                                    annexb_reader.reset();
+                                }
+                            } else if pos + 4 < packet_end && stream_data.packet[pos..pos + 4] == [0x00, 0x00, 0x00, 0x01] {
+                                let nal_start = pos;
+                                pos += 4; // Move past the long start code
+
+                                // Search for the next start code
+                                while pos + 4 <= packet_end &&
+                                      stream_data.packet[pos..pos + 4] != [0x00, 0x00, 0x00, 0x01] {
+                                    // Check for short start code
+                                    if stream_data.packet[pos..pos + 3] == [0x00, 0x00, 0x01] && pos > nal_start + 3 {
+                                        // Found a short start code, so back up and process the NAL unit
+                                        break;
+                                    } else if stream_data.packet[pos + 1] == 0xff && pos > nal_start + 3 {
+                                        // check for 0xff padding and that we are at least 2 bytes into the nal
+                                        break;
+                                    } else if stream_data.packet[pos..pos + 3] == [0x00, 0x00, 0x00] && pos > nal_start + 3 {
+                                        // check for 0x00 0x00 0x00 0x00 sequence to stop at
+                                        break;
+                                    }
+                                    pos += 1;
+                                }
+
+                                // check if we only have 4 bytes left in the packet, if so then collect them too
+                                if pos + 4 >= packet_end {
+                                    while pos < packet_end {
+                                        if stream_data.packet[pos..pos + 1] == [0xff] {
+                                            // check for 0xff padding and that we are at least 2 bytes into the nal
+                                            break;
+                                        } else if pos + 2 < packet_end && stream_data.packet[pos..pos + 2] == [0x00, 0x00] {
+                                            // check for 0x00 0x00 sequence to stop at
+                                            break;
+                                        }
+                                        pos += 1;
+                                    }
+                                }
+
+                                let nal_end = pos; // End of NAL unit found or end of packet
+                                if nal_end - nal_start > 3 { // Threshold for significant NAL unit size
+                                    let nal_unit = &stream_data.packet[nal_start..nal_end];
+
+                                    // Debug print the NAL unit
+                                    if debug_nals {
+                                        let packet_len = nal_end - nal_start;
+                                        let nal_unit_arc = Arc::new(nal_unit.to_vec());
+                                        hexdump(&nal_unit_arc, 0, packet_len);
+                                        info!("Extracted {} byte Long NAL Unit from packet range {}-{}:", packet_len, nal_start, nal_end);
+                                    }
+
+                                    // Process the NAL unit
+                                    annexb_reader.push(nal_unit);
+                                    annexb_reader.reset();
+                                }
+                            } else {
+                                pos += 1; // Move to the next byte if no start code found
+                            }
+                        }
+                    }
+                    // Clear the batch after processing
+                    batch.clear();
+                }
+                _ = tokio::time::sleep(Duration::from_millis(10)), if !running_decoder.load(Ordering::SeqCst) => {
+                    // This branch allows checking the running flag regularly
+                    info!("Decoder thread received stop signal.");
+                    break;
+                }
+            }
+        }
+    });
+
+    /*
+    // Process the NAL unit
+    annexb_reader.push(nal_unit);
+    annexb_reader.reset();
+    */
+}
