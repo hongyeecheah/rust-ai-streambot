@@ -358,3 +358,83 @@ pub fn network_capture(network_capture: &mut NetworkCapture, ptx: mpsc::Sender<A
                 buffer_size as i64,
                 source_protocol.as_str(),
                 source_port,
+                source_ip.as_str(),
+            )
+            .expect("Failed to initialize pcap");
+
+            // Create a PacketStream from the Capture
+            let mut stream = cap.stream(BoxCodec).unwrap();
+            let mut count = 0;
+
+            let mut stats_last_sent_ts = Instant::now();
+            let mut packets_dropped = 0;
+
+            while running_capture.load(Ordering::SeqCst) {
+                while let Some(packet) = stream.next().await {
+                    if !running_capture.load(Ordering::SeqCst) {
+                        break;
+                    }
+                    match packet {
+                        Ok(data) => {
+                            count += 1;
+                            let packet_data = Arc::new(data.to_vec());
+                            ptx.send(packet_data).await.unwrap();
+                            if !running_capture.load(Ordering::SeqCst) {
+                                break;
+                            }
+                            let current_ts = Instant::now();
+                            if pcap_stats
+                                && ((current_ts.duration_since(stats_last_sent_ts).as_secs() >= 30)
+                                    || count == 1)
+                            {
+                                stats_last_sent_ts = current_ts;
+                                let stats = stream.capture_mut().stats().unwrap();
+                                info!(
+                                "#{} Current stats: Received: {}, Dropped: {}/{}, Interface Dropped: {} packet_size: {} bytes.",
+                                count, stats.received, stats.dropped - packets_dropped, stats.dropped, stats.if_dropped, data.len(),
+                            );
+                                packets_dropped = stats.dropped;
+                            }
+                        }
+                        Err(e) => {
+                            // Print error and information about it
+                            error!("PCap Capture Error occurred: {}", e);
+                            if e == pcap::Error::TimeoutExpired {
+                                // If timeout expired, check for running_capture
+                                if !running_capture.load(Ordering::SeqCst) {
+                                    break;
+                                }
+                                // Timeout expired, continue and try again
+                                continue;
+                            } else {
+                                // Exit the loop if an error occurs
+                                running_capture.store(false, Ordering::SeqCst);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if debug_on {
+                    let stats = stream.capture_mut().stats().unwrap();
+                    info!(
+                        "Current stats: Received: {}, Dropped: {}, Interface Dropped: {}",
+                        stats.received, stats.dropped, stats.if_dropped
+                    );
+                }
+                if !running_capture.load(Ordering::SeqCst) {
+                    break;
+                }
+            }
+
+            let stats = stream.capture_mut().stats().unwrap();
+            info!("Packet capture statistics:");
+            info!("Received: {}", stats.received);
+            info!("Dropped: {}", stats.dropped);
+            info!("Interface Dropped: {}", stats.if_dropped);
+        })
+    };
+
+    network_capture.capture_task = Some(capture_task);
+    // store Arc running for use by the caller to stop the capture, clone it
+    network_capture.running = running.clone();
+}
