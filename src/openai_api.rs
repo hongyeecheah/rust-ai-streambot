@@ -12,4 +12,12 @@ use std::time::Instant;
 use tokio::sync::mpsc::{self};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
-pub struc
+pub struct Message {
+    pub role: String,
+    pub content: String,
+}
+
+#[derive(Serialize)]
+pub struct OpenAIRequest<'a> {
+    pub model: &'a str,
+  
