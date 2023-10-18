@@ -20,4 +20,6 @@ pub struct Message {
 #[derive(Serialize)]
 pub struct OpenAIRequest<'a> {
     pub model: &'a str,
-  
+    pub messages: Vec<Message>,
+    pub max_tokens: &'a usize,      // add this field to the request struct
+    pub temperature: &'a f32,       // add this fiel
