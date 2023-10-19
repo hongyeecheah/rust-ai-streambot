@@ -36,4 +36,12 @@ struct OpenAIResponse {
     id: Option<String>,
     model: Option<String>,
     object: Option<String>,
-    choices:
+    choices: Option<Vec<Choice>>,
+    content: Option<String>,
+    system_fingerprint: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct Choice {
+    finish_reason: Option<String>,
+    
