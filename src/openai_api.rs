@@ -30,4 +30,10 @@ pub struct OpenAIRequest<'a> {
 }
 
 #[derive(Deserialize)]
-struct OpenAIRe
+struct OpenAIResponse {
+    role: Option<String>,
+    created: Option<i64>,
+    id: Option<String>,
+    model: Option<String>,
+    object: Option<String>,
+    choices:
