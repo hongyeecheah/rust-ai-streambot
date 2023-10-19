@@ -22,4 +22,6 @@ pub struct OpenAIRequest<'a> {
     pub model: &'a str,
     pub messages: Vec<Message>,
     pub max_tokens: &'a usize,      // add this field to the request struct
-    pub temperature: &'a f32,       // add this fiel
+    pub temperature: &'a f32,       // add this field to the request struct
+    pub top_p: &'a f32,             // add this field to the request struct
+    pub presence_penalty: &'a f32,  // add this field
