@@ -24,4 +24,10 @@ pub struct OpenAIRequest<'a> {
     pub max_tokens: &'a usize,      // add this field to the request struct
     pub temperature: &'a f32,       // add this field to the request struct
     pub top_p: &'a f32,             // add this field to the request struct
-    pub presence_penalty: &'a f32,  // add this field
+    pub presence_penalty: &'a f32,  // add this field to the request struct
+    pub frequency_penalty: &'a f32, // add this field to the request struct
+    pub stream: &'a bool,
+}
+
+#[derive(Deserialize)]
+struct OpenAIRe
