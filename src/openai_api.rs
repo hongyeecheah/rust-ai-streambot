@@ -44,4 +44,11 @@ struct OpenAIResponse {
 #[derive(Deserialize)]
 pub struct Choice {
     finish_reason: Option<String>,
-    
+    logprobs: Option<bool>,
+    index: i32,
+    delta: Delta, // Use Option to handle cases where it might be null or missing
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Delta {
+    cont
