@@ -51,4 +51,12 @@ pub struct Choice {
 
 #[derive(Debug, Deserialize)]
 pub struct Delta {
-    cont
+    content: Option<String>,
+}
+
+pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> String {
+    let mut formatted_history = String::new();
+    // Begin/End Stream Tokens
+    let eos_token = if chat_format == "llama2" { "</s>" } else { "" };
+    let bos_token = if chat_format == "llama2" { "<s>" } else { "" };
+  
