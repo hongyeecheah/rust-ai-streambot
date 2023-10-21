@@ -59,4 +59,8 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
     // Begin/End Stream Tokens
     let eos_token = if chat_format == "llama2" { "</s>" } else { "" };
     let bos_token = if chat_format == "llama2" { "<s>" } else { "" };
-  
+    // Instruction Tokens
+    let inst_token = if chat_format == "llama2" {
+        "[INST]"
+    } else if chat_format == "google" {
+      
