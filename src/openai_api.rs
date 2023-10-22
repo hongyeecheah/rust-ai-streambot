@@ -70,3 +70,9 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         ""
     } else {
         ""
+    };
+    let inst_end_token = if chat_format == "llama2" {
+        "[/INST]"
+    } else if chat_format == "google" {
+        "<end_of_turn>"
+    } else if chat_fo
