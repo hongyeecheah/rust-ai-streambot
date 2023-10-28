@@ -83,4 +83,9 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         ""
     };
     // Assistant Tokens
-    let assist_token = i
+    let assist_token = if chat_format == "llama2" {
+        ""
+    } else if chat_format == "google" {
+        "<start_of_turn>"
+    } else if chat_format == "chatml" {
+        "<im_st
