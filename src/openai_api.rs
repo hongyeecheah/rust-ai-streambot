@@ -75,4 +75,12 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         "[/INST]"
     } else if chat_format == "google" {
         "<end_of_turn>"
-    } else if chat_fo
+    } else if chat_format == "chatml" {
+        "<im_end>"
+    } else if chat_format == "vicuna" {
+        "\n"
+    } else {
+        ""
+    };
+    // Assistant Tokens
+    let assist_token = i
