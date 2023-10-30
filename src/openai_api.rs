@@ -96,4 +96,8 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
     };
     let assist_end_token = if chat_format == "llama2" {
         ""
-    } else if chat_f
+    } else if chat_format == "google" {
+        "<end_of_turn>"
+    } else if chat_format == "chatml" {
+        "<im_end>"
+    } else if chat_format == "vicuna" 
