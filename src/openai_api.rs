@@ -100,4 +100,13 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         "<end_of_turn>"
     } else if chat_format == "chatml" {
         "<im_end>"
-    } else if chat_format == "vicuna" 
+    } else if chat_format == "vicuna" {
+        "\n"
+    } else {
+        ""
+    };
+    // System Tokens
+    let sys_token = if chat_format == "llama2" {
+        "<<SYS>>"
+    } else if chat_format == "google" {
+        "<start_o
