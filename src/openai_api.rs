@@ -134,4 +134,10 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
     } else if chat_format == "google" {
         "model"
     } else if chat_format == "chatml" {
-        
+        "system"
+    } else if chat_format == "vicuna" {
+        "System: "
+    } else {
+        ""
+    };
+    let user_name = if chat_format == "ll
