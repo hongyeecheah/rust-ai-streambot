@@ -129,4 +129,9 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         ""
     };
     // Names
-    l
+    let sys_name = if chat_format == "llama2" {
+        ""
+    } else if chat_format == "google" {
+        "model"
+    } else if chat_format == "chatml" {
+        
