@@ -165,4 +165,8 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
 
     for (index, message) in messages.iter().enumerate() {
         // check if last message, safely get if this is the last message
-   
+        let is_last = index == messages.len() - 1;
+        match message.role.as_str() {
+            // remove <|im_end|> from anywhere in message
+            "system" => {
+     
