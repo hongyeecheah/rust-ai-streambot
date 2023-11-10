@@ -159,4 +159,10 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         "assistant"
     } else if chat_format == "vicuna" {
         "Assistant: "
-    } else
+    } else {
+        ""
+    };
+
+    for (index, message) in messages.iter().enumerate() {
+        // check if last message, safely get if this is the last message
+   
