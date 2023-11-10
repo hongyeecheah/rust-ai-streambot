@@ -153,4 +153,10 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
     };
     let assist_name = if chat_format == "llama2" {
         ""
-    } else if chat_format 
+    } else if chat_format == "google" {
+        "model"
+    } else if chat_format == "chatml" {
+        "assistant"
+    } else if chat_format == "vicuna" {
+        "Assistant: "
+    } else
