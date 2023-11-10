@@ -146,4 +146,11 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         "user"
     } else if chat_format == "chatml" {
         "user"
-    } else
+    } else if chat_format == "vicuna" {
+        "User: "
+    } else {
+        ""
+    };
+    let assist_name = if chat_format == "llama2" {
+        ""
+    } else if chat_format 
