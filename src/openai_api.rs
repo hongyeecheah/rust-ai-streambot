@@ -175,4 +175,7 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
                     bos_token, sys_token, sys_name, message_content, sys_end_token, eos_token
                 );
             }
-            "user" =
+            "user" => {
+                // Assuming user messages should be formatted as instructions
+                let message_content = message.content.replace("<|im_end|>", "");
+       
