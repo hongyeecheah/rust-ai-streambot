@@ -169,4 +169,7 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         match message.role.as_str() {
             // remove <|im_end|> from anywhere in message
             "system" => {
-     
+                let message_content = message.content.replace("<|im_end|>", "");
+                formatted_history += &format!(
+                    "{}{}{} {}{}{}\n",
+   
