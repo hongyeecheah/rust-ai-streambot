@@ -178,4 +178,6 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
             "user" => {
                 // Assuming user messages should be formatted as instructions
                 let message_content = message.content.replace("<|im_end|>", "");
-       
+                formatted_history += &format!(
+                    "{}{}{} {}{}\n",
+                    bos_token, inst_token, user_name, message_content, inst_end_t
