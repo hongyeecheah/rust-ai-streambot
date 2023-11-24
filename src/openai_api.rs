@@ -185,3 +185,7 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
             }
             "assistant" => {
                 // Close the instruction tag for user/system messages and add the assistant's response
+                let message_content = message.content.replace("<|im_end|>", "");
+                if is_last {
+                    formatted_history += &format!(
+      
