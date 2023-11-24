@@ -191,4 +191,8 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
                         "{}{}{} {}\n",
                         bos_token, assist_token, assist_name, message_content
                     );
-                } e
+                } else {
+                    formatted_history += &format!(
+                        "{}{}{} {}{}{}\n",
+                        bos_token,
+                        a
