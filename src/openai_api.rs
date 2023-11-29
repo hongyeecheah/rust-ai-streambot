@@ -199,4 +199,12 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
                         assist_name,
                         message_content,
                         assist_end_token,
-                  
+                        eos_token
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+
+    //formatted_history += "Instructions: U
