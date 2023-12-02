@@ -207,4 +207,6 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
         }
     }
 
-    //formatted_history += "Instructions: U
+    //formatted_history += "Instructions: Use the previous converation between you the assitant and the user as context and to answer the last question asked by the User as the assitant.\nAssistant:";
+
+    fo
