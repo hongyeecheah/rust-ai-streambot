@@ -209,4 +209,9 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
 
     //formatted_history += "Instructions: Use the previous converation between you the assitant and the user as context and to answer the last question asked by the User as the assitant.\nAssistant:";
 
-    fo
+    formatted_history
+}
+
+/*
+ * {"choices":[{"finish_reason":"stop","index":0,"message":{"content":"The Los Angeles Dodgers won
+ * the World Series in 2020. They defea
