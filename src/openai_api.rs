@@ -214,4 +214,5 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
 
 /*
  * {"choices":[{"finish_reason":"stop","index":0,"message":{"content":"The Los Angeles Dodgers won
- * the World Series in 2020. They defea
+ * the World Series in 2020. They defeated the Tampa Bay Rays in six
+ * games.","role":"assistant"}}],"created":1706900958,"id":"chatcmpl-8jqjxqYj1IkKixqlHVvmTyJynoPOjaoA","model":"gpt-3.5-turbo","obj
