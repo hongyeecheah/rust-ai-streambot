@@ -215,4 +215,8 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
 /*
  * {"choices":[{"finish_reason":"stop","index":0,"message":{"content":"The Los Angeles Dodgers won
  * the World Series in 2020. They defeated the Tampa Bay Rays in six
- * games.","role":"assistant"}}],"created":1706900958,"id":"chatcmpl-8jqjxqYj1IkKixqlHVvmTyJynoPOjaoA","model":"gpt-3.5-turbo","obj
+ * games.","role":"assistant"}}],"created":1706900958,"id":"chatcmpl-8jqjxqYj1IkKixqlHVvmTyJynoPOjaoA","model":"gpt-3.5-turbo","object":"chat.completion","usage":{"completion_tokens":30,"prompt_tokens":62,"total_tokens":92}}
+ */
+
+pub async fn stream_completion(
+    open_ai_request: OpenAIRequest<'_>,
