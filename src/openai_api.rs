@@ -225,4 +225,9 @@ pub async fn stream_completion(
     llm_path: &str,
     debug_inline: bool,
     show_output_errors: bool,
-    external_sender: tokio::sync::mpsc::Se
+    external_sender: tokio::sync::mpsc::Sender<String>,
+) {
+    let client = Client::new();
+
+    // measure messages member size of the content member of each pair of the messages array
+    let mut prompt_
