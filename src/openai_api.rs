@@ -220,3 +220,9 @@ pub fn format_messages_for_llm(messages: Vec<Message>, chat_format: String) -> S
 
 pub async fn stream_completion(
     open_ai_request: OpenAIRequest<'_>,
+    openai_key: &str,
+    llm_host: &str,
+    llm_path: &str,
+    debug_inline: bool,
+    show_output_errors: bool,
+    external_sender: tokio::sync::mpsc::Se
