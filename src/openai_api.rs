@@ -230,4 +230,9 @@ pub async fn stream_completion(
     let client = Client::new();
 
     // measure messages member size of the content member of each pair of the messages array
-    let mut prompt_
+    let mut prompt_token_count = 0;
+    for message in &open_ai_request.messages {
+        prompt_token_count += message.content.split_whitespace().count();
+    }
+
+    let 
