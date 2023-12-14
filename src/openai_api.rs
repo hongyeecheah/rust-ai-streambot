@@ -235,4 +235,7 @@ pub async fn stream_completion(
         prompt_token_count += message.content.split_whitespace().count();
     }
 
-    let 
+    let start_time = Instant::now();
+    let response = client
+        .post(format!("{}{}", llm_host, llm_path))
+        .header("Authorization", format
