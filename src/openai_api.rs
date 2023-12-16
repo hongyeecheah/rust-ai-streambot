@@ -245,4 +245,12 @@ pub async fn stream_completion(
 
     // handle errors
     let mut response = match response {
-        Ok
+        Ok(resp) => resp,
+        Err(e) => {
+            println!("Error: {}", e);
+            return;
+        }
+    };
+
+    let mut token_count = 0;
+    let mut byte_coun
