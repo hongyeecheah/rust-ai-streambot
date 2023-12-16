@@ -238,4 +238,11 @@ pub async fn stream_completion(
     let start_time = Instant::now();
     let response = client
         .post(format!("{}{}", llm_host, llm_path))
-        .header("Authorization", format
+        .header("Authorization", format!("Bearer {}", openai_key))
+        .json(&open_ai_request)
+        .send()
+        .await;
+
+    // handle errors
+    let mut response = match response {
+        Ok
