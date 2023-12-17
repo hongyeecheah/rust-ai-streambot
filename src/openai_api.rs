@@ -262,4 +262,9 @@ pub async fn stream_completion(
         let text = match response.text().await {
             Ok(text) => text,
             Err(e) => {
-                eprintln!("
+                eprintln!("Failed to get response text: {}", e);
+                return;
+            }
+        };
+        println!("\nLLM Response:\n  {}\n---\n", text);
+        // 
