@@ -258,4 +258,8 @@ pub async fn stream_completion(
 
     if !open_ai_request.stream {
         info!("Response status: {}", response.status());
-        debug!("Headers
+        debug!("Headers: {:#?}", response.headers());
+        let text = match response.text().await {
+            Ok(text) => text,
+            Err(e) => {
+                eprintln!("
