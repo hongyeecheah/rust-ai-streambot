@@ -253,4 +253,9 @@ pub async fn stream_completion(
     };
 
     let mut token_count = 0;
-    let mut byte_coun
+    let mut byte_count = 0;
+    let mut loop_count = 0;
+
+    if !open_ai_request.stream {
+        info!("Response status: {}", response.status());
+        debug!("Headers
