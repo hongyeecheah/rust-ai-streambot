@@ -269,4 +269,10 @@ pub async fn stream_completion(
         println!("\nLLM Response:\n  {}\n---\n", text);
         // send back over mpsc channel
         if let Err(e) = external_sender.send(text).await {
-            eprintln!("Failed to send text over mpsc channel:
+            eprintln!("Failed to send text over mpsc channel: {}", e);
+            return;
+        }
+    } else {
+        // Create an mpsc channel
+        let (tx, mut rx) = mpsc::channel::<Bytes>(32);
+        let (etx, mut erx)
