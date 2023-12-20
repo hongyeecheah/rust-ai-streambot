@@ -275,4 +275,7 @@ pub async fn stream_completion(
     } else {
         // Create an mpsc channel
         let (tx, mut rx) = mpsc::channel::<Bytes>(32);
-        let (etx, mut erx)
+        let (etx, mut erx) = mpsc::channel::<String>(32);
+
+        let headers = response.headers().clone(); // Clone the headers
+        let status = response.status(); // Copy the status
