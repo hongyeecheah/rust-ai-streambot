@@ -282,4 +282,8 @@ pub async fn stream_completion(
 
         // loop through the chunks
         // Spawn a new task for each chunk to process it asynchronously
-        let worker
+        let worker = tokio::spawn(async move {
+            let mut first_run = true;
+            let mut add_newline = false;
+            let mut add_space = false;
+            while le
