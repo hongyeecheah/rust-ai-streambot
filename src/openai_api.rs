@@ -286,4 +286,8 @@ pub async fn stream_completion(
             let mut first_run = true;
             let mut add_newline = false;
             let mut add_space = false;
-            while le
+            while let Some(chunk) = rx.recv().await {
+                loop_count += 1;
+
+                if first_run {
+                    // print heade
