@@ -278,4 +278,8 @@ pub async fn stream_completion(
         let (etx, mut erx) = mpsc::channel::<String>(32);
 
         let headers = response.headers().clone(); // Clone the headers
-        let status = response.status(); // Copy the status
+        let status = response.status(); // Copy the status as well since it's Copy
+
+        // loop through the chunks
+        // Spawn a new task for each chunk to process it asynchronously
+        let worker
