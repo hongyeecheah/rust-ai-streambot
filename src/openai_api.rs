@@ -290,4 +290,7 @@ pub async fn stream_completion(
                 loop_count += 1;
 
                 if first_run {
-                    // print heade
+                    // print headers properly without causing a borrow error
+                    debug!("Headers: {:#?}", headers);
+                    info!("Response status: {}", status);
+ 
