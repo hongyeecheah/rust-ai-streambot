@@ -298,4 +298,7 @@ pub async fn stream_completion(
                 first_run = false;
 
                 debug!("#{} LLM Result Chunk: {:#?}\n", loop_count, chunk);
-                let chunk_
+                let chunk_vec = Vec::from(chunk.as_ref());
+                let chunk_str = match String::from_utf8(chunk_vec).ok() {
+                    Some(s) => s,
+                    None
