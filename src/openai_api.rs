@@ -293,4 +293,9 @@ pub async fn stream_completion(
                     // print headers properly without causing a borrow error
                     debug!("Headers: {:#?}", headers);
                     info!("Response status: {}", status);
- 
+                }
+
+                first_run = false;
+
+                debug!("#{} LLM Result Chunk: {:#?}\n", loop_count, chunk);
+                let chunk_
