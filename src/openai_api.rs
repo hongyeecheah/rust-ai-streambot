@@ -305,4 +305,10 @@ pub async fn stream_completion(
                         error!(
                             "Invalid UTF-8 sequence, skipping chunk. {}/{:?}",
                             chunk.len(),
-    
+                            chunk
+                        );
+                        continue;
+                    } // skip non-UTF-8 chunks
+                };
+
+                // Splitting the chun
