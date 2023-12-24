@@ -301,4 +301,8 @@ pub async fn stream_completion(
                 let chunk_vec = Vec::from(chunk.as_ref());
                 let chunk_str = match String::from_utf8(chunk_vec).ok() {
                     Some(s) => s,
-                    None
+                    None => {
+                        error!(
+                            "Invalid UTF-8 sequence, skipping chunk. {}/{:?}",
+                            chunk.len(),
+    
