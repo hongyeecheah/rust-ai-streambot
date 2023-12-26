@@ -313,4 +313,8 @@ pub async fn stream_completion(
 
                 // Splitting the chunk based on "data: " prefix to handle multiple JSON blobs
                 let json_blobs: Vec<&str> = chunk_str.split("\ndata: ").collect();
-                let mu
+                let mut blob_count = 0;
+
+                for json_blob in json_blobs.iter() {
+                    blob_count += 1;
+                    debug!("Json Blob: {}/{} -
