@@ -317,4 +317,6 @@ pub async fn stream_completion(
 
                 for json_blob in json_blobs.iter() {
                     blob_count += 1;
-                    debug!("Json Blob: {}/{} -
+                    debug!("Json Blob: {}/{} - {}", loop_count, blob_count, json_blob);
+                    if json_blob.is_empty() || *json_blob == "\n" {
+                        debug!("Empty line in respo
