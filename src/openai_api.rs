@@ -328,4 +328,6 @@ pub async fn stream_completion(
                         break;
                     }
 
-                    // Confirm we have a '{' at the start, or find the offset o
+                    // Confirm we have a '{' at the start, or find the offset of first '{' character
+                    let offset = json_blob.find('{').unwrap_or(0);
+                    let response_json = &json_blob[offset..
