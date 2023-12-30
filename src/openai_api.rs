@@ -324,4 +324,8 @@ pub async fn stream_completion(
                     }
 
                     if json_blob == &"[DONE]" {
-                  
+                        info!("End of response chunks.\n");
+                        break;
+                    }
+
+                    // Confirm we have a '{' at the start, or find the offset o
