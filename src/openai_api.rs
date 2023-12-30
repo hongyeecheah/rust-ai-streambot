@@ -319,4 +319,9 @@ pub async fn stream_completion(
                     blob_count += 1;
                     debug!("Json Blob: {}/{} - {}", loop_count, blob_count, json_blob);
                     if json_blob.is_empty() || *json_blob == "\n" {
-                        debug!("Empty line in respo
+                        debug!("Empty line in response chunks.");
+                        continue;
+                    }
+
+                    if json_blob == &"[DONE]" {
+                  
