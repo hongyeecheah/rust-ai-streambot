@@ -330,4 +330,8 @@ pub async fn stream_completion(
 
                     // Confirm we have a '{' at the start, or find the offset of first '{' character
                     let offset = json_blob.find('{').unwrap_or(0);
-                    let response_json = &json_blob[offset..
+                    let response_json = &json_blob[offset..];
+
+                    if response_json.is_empty() {
+                        error!("Invalid response chunk:\n - '{}'", json_blob);
+                 
