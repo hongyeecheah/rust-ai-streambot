@@ -334,4 +334,9 @@ pub async fn stream_completion(
 
                     if response_json.is_empty() {
                         error!("Invalid response chunk:\n - '{}'", json_blob);
-                 
+                        continue;
+                    }
+
+                    debug!("Chunk #{} response: '{}'", loop_count, response_json);
+
+                    matc
