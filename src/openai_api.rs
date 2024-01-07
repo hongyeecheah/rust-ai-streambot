@@ -346,4 +346,6 @@ pub async fn stream_completion(
                                 None => "",
                             };
 
-            
+                            if !content.is_empty() {
+                                println!("LLM Content Response: {}", content);
+                           
