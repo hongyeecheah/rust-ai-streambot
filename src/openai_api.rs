@@ -339,4 +339,11 @@ pub async fn stream_completion(
 
                     debug!("Chunk #{} response: '{}'", loop_count, response_json);
 
-                    matc
+                    match serde_json::from_str::<OpenAIResponse>(response_json) {
+                        Ok(res) => {
+                            let content = match &res.content {
+                                Some(content) => content,
+                                None => "",
+                            };
+
+            
