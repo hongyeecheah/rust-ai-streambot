@@ -348,4 +348,7 @@ pub async fn stream_completion(
 
                             if !content.is_empty() {
                                 println!("LLM Content Response: {}", content);
-                           
+                            }
+
+                            // if res.content exists then continue to the next chunk
+                            if res.content.is_
