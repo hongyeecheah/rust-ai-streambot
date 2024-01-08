@@ -357,4 +357,6 @@ pub async fn stream_completion(
 
                             // Assume `res` is an instance of `OpenAIResponse` you've deserialized
                             let choices = &res.choices.unwrap_or_else(|| {
-                                error!(
+                                error!("No choices found in response.");
+                                Vec::new() // Provide a default value that matches the expected type
+                            })
