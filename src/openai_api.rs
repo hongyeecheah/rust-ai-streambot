@@ -351,4 +351,8 @@ pub async fn stream_completion(
                             }
 
                             // if res.content exists then continue to the next chunk
-                            if res.content.is_
+                            if res.content.is_some() {
+                                continue;
+                            }
+
+                            // Assume `res` is an instance of `O
