@@ -355,4 +355,6 @@ pub async fn stream_completion(
                                 continue;
                             }
 
-                            // Assume `res` is an instance of `O
+                            // Assume `res` is an instance of `OpenAIResponse` you've deserialized
+                            let choices = &res.choices.unwrap_or_else(|| {
+                                error!(
