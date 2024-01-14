@@ -363,4 +363,8 @@ pub async fn stream_completion(
 
                             let role = match res.role {
                                 Some(role) => role,
-                  
+                                None => "unknown".to_string(),
+                            };
+
+                            if let Some(choice) = choices.get(0) {
+  
