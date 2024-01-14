@@ -359,4 +359,8 @@ pub async fn stream_completion(
                             let choices = &res.choices.unwrap_or_else(|| {
                                 error!("No choices found in response.");
                                 Vec::new() // Provide a default value that matches the expected type
-                            })
+                            });
+
+                            let role = match res.role {
+                                Some(role) => role,
+                  
