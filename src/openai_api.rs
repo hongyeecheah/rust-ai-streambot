@@ -367,4 +367,7 @@ pub async fn stream_completion(
                             };
 
                             if let Some(choice) = choices.get(0) {
-                                // check if we got the created date from res.created, if so convert it to naivedatatime for usage else use a default va
+                                // check if we got the created date from res.created, if so convert it to naivedatatime for usage else use a default value
+                                let created_date = match res.created {
+                                    Some(created_timestamp) => {
+               
