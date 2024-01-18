@@ -370,4 +370,6 @@ pub async fn stream_completion(
                                 // check if we got the created date from res.created, if so convert it to naivedatatime for usage else use a default value
                                 let created_date = match res.created {
                                     Some(created_timestamp) => {
-               
+                                        // Convert the timestamp to UTC DateTime first, then to NaiveDateTime.
+                                        let naive_datetime = Utc
+              
