@@ -372,4 +372,5 @@ pub async fn stream_completion(
                                     Some(created_timestamp) => {
                                         // Convert the timestamp to UTC DateTime first, then to NaiveDateTime.
                                         let naive_datetime = Utc
-              
+                                            .timestamp_opt(created_timestamp, 0)
+                                            .single() // This attempts to resolve t
