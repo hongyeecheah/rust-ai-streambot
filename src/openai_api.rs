@@ -375,4 +375,5 @@ pub async fn stream_completion(
                                             .timestamp_opt(created_timestamp, 0)
                                             .single() // This attempts to resolve the Option<T>
                                             .map(|dt| dt.naive_utc()) // Convert DateTime<Utc> to NaiveDateTime
-                                        
+                                            .map(|ndt| ndt.to_string()) // Convert NaiveDateTime to String
+                                            .unwrap_or_else(|| "unknown".to_string());
