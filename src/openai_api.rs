@@ -377,3 +377,8 @@ pub async fn stream_completion(
                                             .map(|dt| dt.naive_utc()) // Convert DateTime<Utc> to NaiveDateTime
                                             .map(|ndt| ndt.to_string()) // Convert NaiveDateTime to String
                                             .unwrap_or_else(|| "unknown".to_string());
+
+                                        naive_datetime
+                                    }
+                                    None => "unknown".to_string(),
+               
