@@ -373,4 +373,6 @@ pub async fn stream_completion(
                                         // Convert the timestamp to UTC DateTime first, then to NaiveDateTime.
                                         let naive_datetime = Utc
                                             .timestamp_opt(created_timestamp, 0)
-                                            .single() // This attempts to resolve t
+                                            .single() // This attempts to resolve the Option<T>
+                                            .map(|dt| dt.naive_utc()) // Convert DateTime<Utc> to NaiveDateTime
+                                        
