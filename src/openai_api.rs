@@ -381,4 +381,8 @@ pub async fn stream_completion(
                                         naive_datetime
                                     }
                                     None => "unknown".to_string(),
-               
+                                };
+
+                                let id = match res.id {
+                                    Some(id) => id,
+                                    None =>
