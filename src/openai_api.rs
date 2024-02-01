@@ -389,4 +389,8 @@ pub async fn stream_completion(
                                 };
 
                                 let model = match res.model {
-                        
+                                    Some(model) => model,
+                                    None => "unknown".to_string(),
+                                };
+
+                              
