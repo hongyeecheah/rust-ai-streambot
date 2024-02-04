@@ -393,4 +393,7 @@ pub async fn stream_completion(
                                     None => "unknown".to_string(),
                                 };
 
-                              
+                                let object = match res.object {
+                                    Some(object) => object,
+                                    None => "unknown".to_string(),
+                     
