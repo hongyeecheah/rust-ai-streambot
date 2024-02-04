@@ -396,4 +396,7 @@ pub async fn stream_completion(
                                 let object = match res.object {
                                     Some(object) => object,
                                     None => "unknown".to_string(),
-                     
+                                };
+
+                                // check if we have a finish reason
+                                if let Some(reason) = &choice.finis
