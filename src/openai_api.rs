@@ -404,4 +404,6 @@ pub async fn stream_completion(
                                     let mut duration = end_time.duration_since(start_time);
                                     let pretty_time = format!("{:?}", duration);
 
-                                    // Ensure the duration 
+                                    // Ensure the duration is at least 1 second
+                                    if duration < std::time::Duration::new(1, 0) {
+                                        duration = std::time
