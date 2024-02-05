@@ -399,4 +399,6 @@ pub async fn stream_completion(
                                 };
 
                                 // check if we have a finish reason
-                                if let Some(reason) = &choice.finis
+                                if let Some(reason) = &choice.finish_reason {
+                                    let end_time = Instant::now();
+                                    let mut duration = end_time.durat
