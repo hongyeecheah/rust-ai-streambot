@@ -410,4 +410,5 @@ pub async fn stream_completion(
                                     }
 
                                     debug!(
-                                         "\n--\nIndex {} ID 
+                                         "\n--\nIndex {} ID {}\nObject {} by Model {} User {}\nCreated on {} Finish reason: {}\n {}/{}/{} Tokens/Prompt/Response {} Bytes at {}tps @ {}s.\n--\n",
+         
