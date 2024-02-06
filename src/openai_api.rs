@@ -406,4 +406,8 @@ pub async fn stream_completion(
 
                                     // Ensure the duration is at least 1 second
                                     if duration < std::time::Duration::new(1, 0) {
-                                        duration = std::time
+                                        duration = std::time::Duration::new(1, 0);
+                                    }
+
+                                    debug!(
+                                         "\n--\nIndex {} ID 
