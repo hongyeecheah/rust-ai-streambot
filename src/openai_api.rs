@@ -416,4 +416,7 @@ pub async fn stream_completion(
                                          object,
                                          model,
                                          role,
-                                       
+                                         created_date,
+                                         reason,
+                                         token_count + prompt_token_count,
+                                 
