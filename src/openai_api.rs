@@ -419,4 +419,7 @@ pub async fn stream_completion(
                                          created_date,
                                          reason,
                                          token_count + prompt_token_count,
-                                 
+                                         prompt_token_count,
+                                         token_count,
+                                         byte_count,
+                            
