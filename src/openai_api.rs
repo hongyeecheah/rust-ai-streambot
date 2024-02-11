@@ -422,4 +422,8 @@ pub async fn stream_completion(
                                          prompt_token_count,
                                          token_count,
                                          byte_count,
-                            
+                                         token_count as u64 / duration.as_secs(),
+                                         pretty_time
+                                     );
+
+                       
