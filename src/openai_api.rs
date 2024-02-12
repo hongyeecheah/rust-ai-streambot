@@ -432,4 +432,8 @@ pub async fn stream_completion(
 
                                 // check for system_fingerprint
                                 if let Some(fingerprint) = &res.system_fingerprint {
-                                 
+                                    debug!("\nSystem fingerprint: {}", fingerprint);
+                                }
+
+                                // check for logprobs
+                         
