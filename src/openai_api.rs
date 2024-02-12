@@ -426,4 +426,8 @@ pub async fn stream_completion(
                                          pretty_time
                                      );
 
-                       
+                                    // break the loop if we have a finish reason
+                                    break;
+                                }
+
+                           
