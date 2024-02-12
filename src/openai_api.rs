@@ -430,4 +430,6 @@ pub async fn stream_completion(
                                     break;
                                 }
 
-                           
+                                // check for system_fingerprint
+                                if let Some(fingerprint) = &res.system_fingerprint {
+                                 
