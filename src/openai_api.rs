@@ -436,4 +436,8 @@ pub async fn stream_completion(
                                 }
 
                                 // check for logprobs
-                         
+                                if let Some(logprobs) = choice.logprobs {
+                                    println!("Logprobs: {}", logprobs);
+                                }
+
+                  
