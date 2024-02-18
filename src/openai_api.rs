@@ -442,4 +442,5 @@ pub async fn stream_completion(
 
                                 // check if we have content in the delta
                                 if let Some(content) = &choice.delta.content {
-                           
+                                    // if add_newline is true, add a new line before the content and set add_newline to false
+                                    let content = if 
