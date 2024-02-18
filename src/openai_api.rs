@@ -440,4 +440,6 @@ pub async fn stream_completion(
                                     println!("Logprobs: {}", logprobs);
                                 }
 
-                  
+                                // check if we have content in the delta
+                                if let Some(content) = &choice.delta.content {
+                           
