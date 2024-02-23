@@ -446,4 +446,7 @@ pub async fn stream_completion(
                                     let content = if add_newline {
                                         add_newline = false;
                                         format!(" {}", content)
-                                    } else if 
+                                    } else if add_space {
+                                        add_space = false;
+                                        format!(" {}", content)
+                           
