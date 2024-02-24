@@ -449,4 +449,8 @@ pub async fn stream_completion(
                                     } else if add_space {
                                         add_space = false;
                                         format!(" {}", content)
-                           
+                                    } else {
+                                        content.to_string()
+                                    };
+
+                                    //
