@@ -453,4 +453,6 @@ pub async fn stream_completion(
                                         content.to_string()
                                     };
 
-                                    //
+                                    // check if contains only a new line, if so set add_newline to true
+                                    // if multiple new lines are present, only add one new line
+              
