@@ -469,4 +469,8 @@ pub async fn stream_completion(
 
                                     token_count += 1;
                                     byte_count += content.len();
-                                    if let Err(e) = etx.send(format!("{}", co
+                                    if let Err(e) = etx.send(format!("{}", content)).await {
+                                        error!("Failed to send content: {}", e);
+                                    }
+
+            
