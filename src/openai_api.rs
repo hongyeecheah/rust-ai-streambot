@@ -459,4 +459,8 @@ pub async fn stream_completion(
                                     if content.ends_with("\n") && content.trim() == "" {
                                         add_newline = true;
                                         continue;
-                                
+                                    }
+
+                                    // check if contains only a space, if so set add_space to true
+                                    if content.trim() == "" {
+                
