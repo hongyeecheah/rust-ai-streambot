@@ -463,4 +463,8 @@ pub async fn stream_completion(
 
                                     // check if contains only a space, if so set add_space to true
                                     if content.trim() == "" {
-                
+                                        add_space = true;
+                                        continue;
+                                    }
+
+                        
