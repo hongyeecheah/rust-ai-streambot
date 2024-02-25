@@ -467,4 +467,6 @@ pub async fn stream_completion(
                                         continue;
                                     }
 
-                        
+                                    token_count += 1;
+                                    byte_count += content.len();
+                                    if let Err(e) = etx.send(format!("{}", co
