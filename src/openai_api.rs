@@ -475,4 +475,6 @@ pub async fn stream_completion(
 
                                     if let Err(e) = external_sender.send(content.to_string()).await
                                     {
-          
+                                        error!("Failed to send content to external sender: {}", e);
+                                    }
+                     
