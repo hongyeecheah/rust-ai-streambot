@@ -477,4 +477,8 @@ pub async fn stream_completion(
                                     {
                                         error!("Failed to send content to external sender: {}", e);
                                     }
-                     
+                                }
+                            } else {
+                                error!("No choices available.");
+                            }
+  
