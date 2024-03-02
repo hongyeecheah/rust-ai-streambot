@@ -481,4 +481,7 @@ pub async fn stream_completion(
                             } else {
                                 error!("No choices available.");
                             }
-  
+                        }
+                        Err(e) => {
+                            // Handle the parse error here
+                            if
