@@ -484,4 +484,6 @@ pub async fn stream_completion(
                         }
                         Err(e) => {
                             // Handle the parse error here
-                            if
+                            if debug_inline {
+                                error!("\nFailed to parse response: {}\n", e);
+                                error!("\nResponse that failed to parse: '{}'\n
