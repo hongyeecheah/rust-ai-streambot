@@ -486,4 +486,8 @@ pub async fn stream_completion(
                             // Handle the parse error here
                             if debug_inline {
                                 error!("\nFailed to parse response: {}\n", e);
-                                error!("\nResponse that failed to parse: '{}'\n
+                                error!("\nResponse that failed to parse: '{}'\n", response_json);
+                            } else {
+                                // push to etx channel
+                                if show_output_errors {
+     
