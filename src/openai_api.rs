@@ -492,4 +492,7 @@ pub async fn stream_completion(
                                 if show_output_errors {
                                     if let Err(e) =
                                         etx.send(format!("ERROR: {} - {}", e, response_json)).await
-   
+                                    {
+                                        error!("Failed to send error: {}", e);
+                                    }
+                      
