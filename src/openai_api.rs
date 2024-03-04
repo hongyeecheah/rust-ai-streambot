@@ -499,4 +499,10 @@ pub async fn stream_completion(
                                 }
                             }
                         }
-          
+                    }
+                }
+            }
+        });
+
+        // collect answers from the worker
+        let error_collector = tokio::spawn(async move {
