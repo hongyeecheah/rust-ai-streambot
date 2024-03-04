@@ -495,4 +495,8 @@ pub async fn stream_completion(
                                     {
                                         error!("Failed to send error: {}", e);
                                     }
-                      
+                                    print!(".X.");
+                                }
+                            }
+                        }
+          
