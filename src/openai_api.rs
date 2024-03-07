@@ -518,4 +518,12 @@ pub async fn stream_completion(
         // Main task to send chunks to the worker
         while let Ok(Some(chunk)) = response.chunk().await {
             if let Err(e) = tx.send(chunk).await {
-                error!("Failed t
+                error!("Failed to send chunk: {}", e);
+            }
+        }
+
+        // Close the channel by dropping tx
+        drop(tx);
+
+        // Await the worker task to finish processing
+   
