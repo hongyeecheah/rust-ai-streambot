@@ -515,4 +515,7 @@ pub async fn stream_completion(
             errors // Return collected errors from the task
         });
 
-        // Main task to send
+        // Main task to send chunks to the worker
+        while let Ok(Some(chunk)) = response.chunk().await {
+            if let Err(e) = tx.send(chunk).await {
+                error!("Failed t
