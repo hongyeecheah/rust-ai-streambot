@@ -509,4 +509,10 @@ pub async fn stream_completion(
             let mut errors = Vec::new();
             while let Some(message) = erx.recv().await {
                 if message.starts_with("ERROR:") {
-  
+                    errors.push(message);
+                }
+            }
+            errors // Return collected errors from the task
+        });
+
+        // Main task to send
