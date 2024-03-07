@@ -506,3 +506,7 @@ pub async fn stream_completion(
 
         // collect answers from the worker
         let error_collector = tokio::spawn(async move {
+            let mut errors = Vec::new();
+            while let Some(message) = erx.recv().await {
+                if message.starts_with("ERROR:") {
+  
