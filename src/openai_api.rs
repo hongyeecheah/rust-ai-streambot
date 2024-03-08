@@ -526,4 +526,8 @@ pub async fn stream_completion(
         drop(tx);
 
         // Await the worker task to finish processing
-   
+        if let Err(e) = worker.await {
+            error!("Worker task failed: {}", e);
+        }
+
+        // Await the error collector task to retrieve the collected er
