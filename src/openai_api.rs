@@ -534,4 +534,11 @@ pub async fn stream_completion(
         let errors = match error_collector.await {
             Ok(errors) => errors,
             Err(e) => {
-                error!("Error collector task 
+                error!("Error collector task failed: {}", e);
+                Vec::new()
+            }
+        };
+
+        // Print errors
+        if !errors.is_empty() {
+            println!("\
