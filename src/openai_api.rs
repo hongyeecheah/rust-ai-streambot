@@ -541,4 +541,10 @@ pub async fn stream_completion(
 
         // Print errors
         if !errors.is_empty() {
-            println!("\
+            println!("\nErrors:");
+            for error in errors.iter() {
+                println!("{}", error);
+            }
+        }
+    }
+}
