@@ -530,4 +530,8 @@ pub async fn stream_completion(
             error!("Worker task failed: {}", e);
         }
 
-        // Await the error collector task to retrieve the collected er
+        // Await the error collector task to retrieve the collected errors
+        let errors = match error_collector.await {
+            Ok(errors) => errors,
+            Err(e) => {
+                error!("Error collector task 
