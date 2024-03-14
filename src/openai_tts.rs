@@ -42,3 +42,99 @@ impl std::fmt::Display for Voice {
             Voice::Shimmer => write!(f, "shimmer"),
         }
     }
+}
+
+impl std::error::Error for ApiError {}
+
+#[derive(Serialize)]
+pub struct Request {
+    model: String,
+    input: String,
+    voice: Voice,
+    response_format: ResponseFormat,
+}
+
+#[derive(Serialize)]
+pub enum ResponseFormat {
+    #[serde(rename = "mp3")]
+    Mp3,
+    #[serde(rename = "opus")]
+    Opus,
+    #[serde(rename = "aac")]
+    Aac,
+    #[serde(rename = "flac")]
+    Flac,
+}
+#[derive(Serialize)]
+pub enum Voice {
+    #[serde(rename = "alloy")]
+    Alloy,
+    #[serde(rename = "echo")]
+    Echo,
+    #[serde(rename = "fable")]
+    Fable,
+    #[serde(rename = "onyx")]
+    Onyx,
+    #[serde(rename = "nova")]
+    Nova,
+    #[serde(rename = "shimmer")]
+    Shimmer,
+}
+impl Request {
+    pub fn new(model: String, input: String, voice: Voice) -> Self {
+        Request {
+            model: model,
+            input: input,
+            voice: voice,
+            response_format: ResponseFormat::Mp3,
+        }
+    }
+    pub fn with_response_format(mut self, response_format: ResponseFormat) -> Self {
+        self.response_format = response_format;
+        self
+    }
+}
+pub async fn tts(req: Request, api_key: &str) -> Result<Bytes, ApiError> {
+    let client = Client::new();
+
+    // remove any special characters from the input for tts request
+    let req = Request {
+        input: req
+            .input
+            .chars()
+            .filter(|c| c.is_alphanumeric() || c.is_whitespace())
+            .collect(),
+        ..req
+    };
+
+    debug!(
+        "Sending TTS request: {}... model: {} voice: {} to OpenAI",
+        req.input.chars().take(10).collect::<String>(),
+        req.model,
+        req.voice.to_string()
+    );
+    let response = client
+        .post(ENDPOINT)
+        .bearer_auth(api_key)
+        .json(&req)
+        .send()
+        .await;
+    match response {
+        Ok(response) => {
+            if response.status().is_success() {
+                if let Ok(response) = response.bytes().await {
+                    Ok(response)
+                } else {
+                    Err(ApiError::Error(String::from("Error in posting data")))
+                }
+            } else {
+                Err(ApiError::Error(format!(
+                    "{}: {}",
+                    response.status().to_string(),
+                    response.text().await.unwrap_or_default()
+                )))
+            }
+        }
+        Err(e) => Err(ApiError::RequestError(e)),
+    }
+}
