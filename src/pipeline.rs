@@ -233,3 +233,27 @@ pub async fn send_to_ndi(processed_data: ProcessedData, args: &Args) {
                     chunk_size
                 } else {
                     last_chunk_size
+                };
+                // Append silence to the last chunk to make it the same size as the other chunks
+                let silence_samples = (chunk_size - last_chunk_size) as usize;
+                let silence_vec = vec![0.0; silence_samples];
+                samples_f32.extend(silence_vec);
+
+                debug!(
+                    "Sending {} ms duration {} audio samples",
+                    delay_ms, chunk_size
+                );
+
+                for chunk_samples in samples_f32.chunks(chunk_size as usize) {
+                    let mut chunk_vec = chunk_samples.to_vec();
+                    if chunk_samples.len() < chunk_size as usize {
+                        chunk_vec.resize(chunk_size as usize, 0.0);
+                    }
+                    send_audio_samples_over_ndi(chunk_vec, sample_rate, channels)
+                        .expect("Failed to send audio samples over NDI");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
+                }
+            }
+        }
+    }
+}
