@@ -14,4 +14,6 @@ pub async fn sd_auto(
 ) -> Result<Vec<ImageBuffer<Rgb<u8>, Vec<u8>>>, anyhow::Error> {
     let client = Client::new();
 
-    let model = match config.sd_ve
+    let model = match config.sd_version {
+        StableDiffusionVersion::Custom => config.custom_model.as_deref().unwrap_or("sd_xl_turbo_1.0.safetensors"),
+        StableDiffusionVersion::V1_5 => "v1-5-p
