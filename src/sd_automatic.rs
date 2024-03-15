@@ -9,4 +9,9 @@ use image::Rgb;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-pub as
+pub async fn sd_auto(
+    config: SDConfig,
+) -> Result<Vec<ImageBuffer<Rgb<u8>, Vec<u8>>>, anyhow::Error> {
+    let client = Client::new();
+
+    let model = match config.sd_ve
