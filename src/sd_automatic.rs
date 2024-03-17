@@ -16,4 +16,6 @@ pub async fn sd_auto(
 
     let model = match config.sd_version {
         StableDiffusionVersion::Custom => config.custom_model.as_deref().unwrap_or("sd_xl_turbo_1.0.safetensors"),
-        StableDiffusionVersion::V1_5 => "v1-5-p
+        StableDiffusionVersion::V1_5 => "v1-5-pruned-emaonly.ckpt",
+        StableDiffusionVersion::V2_1 => "v2-1_768-ema-pruned.ckpt",
+        StableDiffusionVersion::Xl => "stabilityai/stable-diffusion-xl-1024-1.
