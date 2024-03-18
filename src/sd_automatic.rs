@@ -24,4 +24,7 @@ pub async fn sd_auto(
 
     let payload = AutomaticPayload {
         prompt: config.prompt,
-        ne
+        negative_prompt: config.uncond_prompt,
+        steps: config.n_steps.unwrap_or(20),
+        width: config.width.unwrap_or(512),
+        height: config.height.unwr
