@@ -30,4 +30,8 @@ pub async fn sd_auto(
         height: config.height.unwrap_or(512),
         cfg_scale: config.guidance_scale.unwrap_or(7.5),
         sampler_index: "Euler".to_string(),
-        seed: config.seed.unwrap_or_else(ra
+        seed: config.seed.unwrap_or_else(rand::random) as u64,
+        n_iter: config.num_samples,
+        batch_size: 1,
+        override_settings: OverrideSettings {
+            sd_
