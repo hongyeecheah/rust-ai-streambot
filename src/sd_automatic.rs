@@ -34,4 +34,10 @@ pub async fn sd_auto(
         n_iter: config.num_samples,
         batch_size: 1,
         override_settings: OverrideSettings {
-            sd_
+            sd_model_checkpoint: model.to_string(),
+        },
+    };
+
+    let response = client
+        .post("http://127.0.0.1:7860/sdapi/v1/txt2img")
+   
