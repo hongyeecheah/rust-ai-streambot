@@ -27,4 +27,7 @@ pub async fn sd_auto(
         negative_prompt: config.uncond_prompt,
         steps: config.n_steps.unwrap_or(20),
         width: config.width.unwrap_or(512),
-        height: config.height.unwr
+        height: config.height.unwrap_or(512),
+        cfg_scale: config.guidance_scale.unwrap_or(7.5),
+        sampler_index: "Euler".to_string(),
+        seed: config.seed.unwrap_or_else(ra
