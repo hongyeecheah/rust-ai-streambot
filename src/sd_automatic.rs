@@ -40,4 +40,9 @@ pub async fn sd_auto(
 
     let response = client
         .post("http://127.0.0.1:7860/sdapi/v1/txt2img")
-   
+        .json(&payload)
+        .send()
+        .await?;
+
+    let response_json: serde_json::Value = response.json().await?;
+    let image_data = response_json["images"].as_arr
