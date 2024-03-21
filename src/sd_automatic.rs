@@ -45,4 +45,9 @@ pub async fn sd_auto(
         .await?;
 
     let response_json: serde_json::Value = response.json().await?;
-    let image_data = response_json["images"].as_arr
+    let image_data = response_json["images"].as_array().unwrap();
+
+    let mut images = Vec::new();
+    for image_base64 in image_data {
+        let image_bytes = general_purpose::STANDARD
+            .decode(image
