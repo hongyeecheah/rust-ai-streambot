@@ -50,4 +50,7 @@ pub async fn sd_auto(
     let mut images = Vec::new();
     for image_base64 in image_data {
         let image_bytes = general_purpose::STANDARD
-            .decode(image
+            .decode(image_base64.as_str().unwrap())
+            .unwrap();
+        let image = image::load_from_memory(&image_bytes)?;
+        let image_rgb8 = image.to_
