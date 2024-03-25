@@ -53,4 +53,11 @@ pub async fn sd_auto(
             .decode(image_base64.as_str().unwrap())
             .unwrap();
         let image = image::load_from_memory(&image_bytes)?;
-        let image_rgb8 = image.to_
+        let image_rgb8 = image.to_rgb8();
+        images.push(image_rgb8);
+    }
+
+    let scaled_images: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = images
+        .into_iter()
+        .map(|image| {
+ 
