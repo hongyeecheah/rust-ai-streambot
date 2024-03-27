@@ -64,4 +64,14 @@ pub async fn sd_auto(
                 image,
                 config.scaled_width,
                 config.scaled_height,
-                config.image_position.clone(
+                config.image_position.clone(),
+            )
+        })
+        .collect();
+
+    Ok(scaled_images)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct OverrideSettings {
+    sd_model_
