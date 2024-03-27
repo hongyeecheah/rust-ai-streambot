@@ -60,4 +60,8 @@ pub async fn sd_auto(
     let scaled_images: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = images
         .into_iter()
         .map(|image| {
- 
+            scale_image(
+                image,
+                config.scaled_width,
+                config.scaled_height,
+                config.image_position.clone(
