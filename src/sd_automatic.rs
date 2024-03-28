@@ -83,3 +83,10 @@ struct AutomaticPayload {
     negative_prompt: String,
     steps: usize,
     width: usize,
+    height: usize,
+    cfg_scale: f64,
+    sampler_index: String,
+    seed: u64,
+    n_iter: usize,
+    batch_size: usize,
+    overri
