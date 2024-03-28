@@ -74,4 +74,12 @@ pub async fn sd_auto(
 
 #[derive(Debug, Serialize, Deserialize)]
 struct OverrideSettings {
-    sd_model_
+    sd_model_checkpoint: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AutomaticPayload {
+    prompt: String,
+    negative_prompt: String,
+    steps: usize,
+    width: usize,
