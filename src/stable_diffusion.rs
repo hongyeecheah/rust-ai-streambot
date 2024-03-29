@@ -252,3 +252,156 @@ pub struct SDConfig {
     pub prompt: String,
     pub uncond_prompt: String,
     pub cpu: bool,
+    pub tracing: bool,
+    pub height: Option<usize>,
+    pub width: Option<usize>,
+    pub unet_weights: Option<String>,
+    pub clip_weights: Option<String>,
+    pub vae_weights: Option<String>,
+    pub tokenizer: Option<String>,
+    pub sliced_attention_size: Option<usize>,
+    pub n_steps: Option<usize>,
+    pub num_samples: usize,
+    pub sd_version: StableDiffusionVersion,
+    pub custom_model: Option<String>,
+    pub intermediary_images: bool,
+    pub use_flash_attn: bool,
+    pub use_f16: bool,
+    pub guidance_scale: Option<f64>,
+    pub img2img: Option<String>,
+    pub img2img_strength: f64,
+    pub scaled_width: Option<u32>,
+    pub scaled_height: Option<u32>,
+    pub image_position: Option<String>,
+    pub seed: Option<u32>,
+}
+
+impl SDConfig {
+    // Providing a method to create a new SDConfig with default values
+    pub fn new() -> Self {
+        SDConfig {
+            prompt: "A very realistic photo of a rusty robot walking on a sandy beach".into(),
+            uncond_prompt: "".into(),
+            cpu: false,
+            tracing: false,
+            height: Some(512),
+            width: Some(512),
+            unet_weights: None,
+            clip_weights: None,
+            vae_weights: None,
+            tokenizer: None,
+            sliced_attention_size: None,
+            n_steps: None,
+            num_samples: 1,
+            sd_version: StableDiffusionVersion::Turbo,
+            custom_model: None,
+            intermediary_images: false,
+            use_flash_attn: false,
+            use_f16: false,
+            guidance_scale: None,
+            img2img: None,
+            img2img_strength: 0.8,
+            scaled_width: None,
+            scaled_height: None,
+            image_position: None,
+            seed: None,
+        }
+    }
+}
+
+pub async fn sd(config: SDConfig) -> Result<Vec<ImageBuffer<image::Rgb<u8>, Vec<u8>>>> {
+    use tracing_chrome::ChromeLayerBuilder;
+    use tracing_subscriber::prelude::*;
+
+    // Check if config.seed is None and generate a new seed in that case
+    let mut seed = config.seed;
+
+    if seed.is_none() {
+        seed = Some(rand::random());
+    }
+
+    if !(0. ..=1.).contains(&config.img2img_strength) {
+        anyhow::bail!(
+            "img2img-strength should be between 0 and 1, got {0}",
+            config.img2img_strength
+        )
+    }
+
+    let _guard = if config.tracing {
+        let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
+        tracing_subscriber::registry().with(chrome_layer).init();
+        Some(guard)
+    } else {
+        None
+    };
+
+    let guidance_scale = match config.guidance_scale {
+        Some(guidance_scale) => guidance_scale,
+        None => match config.sd_version {
+            StableDiffusionVersion::V1_5
+            | StableDiffusionVersion::V2_1
+            | StableDiffusionVersion::Xl => 7.5,
+            StableDiffusionVersion::Turbo => 0.,
+            StableDiffusionVersion::Custom => 0.,
+        },
+    };
+    let n_steps = match config.n_steps {
+        Some(n_steps) => n_steps,
+        None => match config.sd_version {
+            StableDiffusionVersion::V1_5
+            | StableDiffusionVersion::V2_1
+            | StableDiffusionVersion::Xl => 20,
+            StableDiffusionVersion::Turbo => 1,
+            StableDiffusionVersion::Custom => 1,
+        },
+    };
+    let dtype = if config.use_f16 {
+        DType::F16
+    } else {
+        DType::F32
+    };
+    let sd_config = match config.sd_version {
+        StableDiffusionVersion::V1_5 => stable_diffusion::StableDiffusionConfig::v1_5(
+            config.sliced_attention_size,
+            config.height,
+            config.width,
+        ),
+        StableDiffusionVersion::V2_1 => stable_diffusion::StableDiffusionConfig::v2_1(
+            config.sliced_attention_size,
+            config.height,
+            config.width,
+        ),
+        StableDiffusionVersion::Xl => stable_diffusion::StableDiffusionConfig::sdxl(
+            config.sliced_attention_size,
+            config.height,
+            config.width,
+        ),
+        StableDiffusionVersion::Turbo => stable_diffusion::StableDiffusionConfig::sdxl_turbo(
+            config.sliced_attention_size,
+            config.height,
+            config.width,
+        ),
+        StableDiffusionVersion::Custom => stable_diffusion::StableDiffusionConfig::sdxl_turbo(
+            config.sliced_attention_size,
+            config.height,
+            config.width,
+        ),
+    };
+
+    let scheduler = sd_config.build_scheduler(n_steps)?;
+    let device = candle_examples::device(config.cpu)?;
+    if let Some(seed) = seed {
+        device.set_seed(seed.into())?;
+    }
+    let use_guide_scale = guidance_scale > 1.0;
+
+    let which = match config.sd_version {
+        StableDiffusionVersion::Xl | StableDiffusionVersion::Turbo => vec![true, false],
+        _ => vec![true],
+    };
+
+    let text_embeddings = which
+        .iter()
+        .map(|first| {
+            text_embeddings(
+                &config.prompt,
