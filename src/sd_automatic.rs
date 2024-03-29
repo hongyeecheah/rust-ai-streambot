@@ -89,4 +89,5 @@ struct AutomaticPayload {
     seed: u64,
     n_iter: usize,
     batch_size: usize,
-    overri
+    override_settings: OverrideSettings,
+}
