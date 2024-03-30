@@ -142,3 +142,157 @@ pub struct StreamData {
 impl Clone for StreamData {
     fn clone(&self) -> Self {
         StreamData {
+            pid: self.pid,
+            pmt_pid: self.pmt_pid,
+            program_number: self.program_number,
+            stream_type: self.stream_type.clone(),
+            continuity_counter: self.continuity_counter,
+            timestamp: self.timestamp,
+            bitrate: self.bitrate,
+            bitrate_max: self.bitrate_max,
+            bitrate_min: self.bitrate_min,
+            bitrate_avg: self.bitrate_avg,
+            iat: self.iat,
+            iat_max: self.iat_max,
+            iat_min: self.iat_min,
+            iat_avg: self.iat_avg,
+            error_count: self.error_count,
+            last_arrival_time: self.last_arrival_time,
+            start_time: self.start_time,
+            total_bits: self.total_bits,
+            count: self.count,
+            packet: Arc::new(Vec::new()), // Initialize as empty with Arc
+            packet_start: 0,
+            packet_len: 0,
+            rtp_timestamp: self.rtp_timestamp,
+            rtp_payload_type: self.rtp_payload_type,
+            rtp_payload_type_name: self.rtp_payload_type_name.clone(),
+            rtp_line_number: self.rtp_line_number,
+            rtp_line_offset: self.rtp_line_offset,
+            rtp_line_length: self.rtp_line_length,
+            rtp_field_id: self.rtp_field_id,
+            rtp_line_continuation: self.rtp_line_continuation,
+            rtp_extended_sequence_number: self.rtp_extended_sequence_number,
+        }
+    }
+}
+
+// StreamData implementation
+impl StreamData {
+    pub fn new(
+        packet: Arc<Vec<u8>>,
+        packet_start: usize,
+        packet_len: usize,
+        pid: u16,
+        stream_type: String,
+        start_time: u64,
+        timestamp: u64,
+        continuity_counter: u8,
+    ) -> Self {
+        let last_arrival_time = current_unix_timestamp_ms().unwrap_or(0);
+        StreamData {
+            pid,
+            pmt_pid: 0xFFFF,
+            program_number: 0,
+            stream_type,
+            continuity_counter,
+            timestamp,
+            bitrate: 0,
+            bitrate_max: 0,
+            bitrate_min: 0,
+            bitrate_avg: 0,
+            iat: 0,
+            iat_max: 0,
+            iat_min: 0,
+            iat_avg: 0,
+            error_count: 0,
+            last_arrival_time,
+            start_time,    // Initialize start time
+            total_bits: 0, // Initialize total bits
+            count: 0,      // Initialize count
+            packet: packet,
+            packet_start: packet_start,
+            packet_len: packet_len,
+            // SMPTE 2110 fields
+            rtp_timestamp: 0,
+            rtp_payload_type: 0,
+            rtp_payload_type_name: "".to_string(),
+            rtp_line_number: 0,
+            rtp_line_offset: 0,
+            rtp_line_length: 0,
+            rtp_field_id: 0,
+            rtp_line_continuation: 0,
+            rtp_extended_sequence_number: 0,
+        }
+    }
+    // set RTP fields
+    pub fn set_rtp_fields(
+        &mut self,
+        rtp_timestamp: u32,
+        rtp_payload_type: u8,
+        rtp_payload_type_name: String,
+        rtp_line_number: u16,
+        rtp_line_offset: u16,
+        rtp_line_length: u16,
+        rtp_field_id: u8,
+        rtp_line_continuation: u8,
+        rtp_extended_sequence_number: u16,
+    ) {
+        self.rtp_timestamp = rtp_timestamp;
+        self.rtp_payload_type = rtp_payload_type;
+        self.rtp_payload_type_name = rtp_payload_type_name;
+        self.rtp_line_number = rtp_line_number;
+        self.rtp_line_offset = rtp_line_offset;
+        self.rtp_line_length = rtp_line_length;
+        self.rtp_field_id = rtp_field_id;
+        self.rtp_line_continuation = rtp_line_continuation;
+        self.rtp_extended_sequence_number = rtp_extended_sequence_number;
+    }
+    pub fn update_stream_type(&mut self, stream_type: String) {
+        self.stream_type = stream_type;
+    }
+    pub fn increment_error_count(&mut self, error_count: u32) {
+        self.error_count += error_count;
+    }
+    pub fn increment_count(&mut self, count: u32) {
+        self.count += count;
+    }
+    pub fn set_continuity_counter(&mut self, continuity_counter: u8) {
+        // check for continuity continuous increment and wrap around from 0 to 15
+        let previous_continuity_counter = self.continuity_counter;
+        self.continuity_counter = continuity_counter & 0x0F;
+        // check if we incremented without loss
+        if self.continuity_counter != previous_continuity_counter + 1
+            && self.continuity_counter != previous_continuity_counter
+        {
+            // check if we wrapped around from 15 to 0
+            if self.continuity_counter == 0 {
+                // check if previous value was 15
+                if previous_continuity_counter == 15 {
+                    // no loss
+                    return;
+                }
+            }
+            // loss
+            self.increment_error_count(1);
+            error!(
+                "Continuity Counter Error: PID: {} Previous: {} Current: {}",
+                self.pid, previous_continuity_counter, self.continuity_counter
+            );
+        }
+        self.continuity_counter = continuity_counter;
+    }
+    pub fn update_stats(&mut self, packet_size: usize, arrival_time: u64) {
+        let bits = packet_size as u64 * 8; // Convert bytes to bits
+
+        // Elapsed time in milliseconds
+        let elapsed_time_ms = arrival_time.checked_sub(self.start_time).unwrap_or(0);
+
+        if elapsed_time_ms > 0 {
+            let elapsed_time_sec = elapsed_time_ms as f64 / 1000.0;
+            self.bitrate = (self.total_bits as f64 / elapsed_time_sec) as u32;
+
+            // Bitrate max
+            if self.bitrate > self.bitrate_max {
+                self.bitrate_max = self.bitrate;
+            }
