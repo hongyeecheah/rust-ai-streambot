@@ -405,3 +405,168 @@ pub async fn sd(config: SDConfig) -> Result<Vec<ImageBuffer<image::Rgb<u8>, Vec<
         .map(|first| {
             text_embeddings(
                 &config.prompt,
+                &config.uncond_prompt,
+                config.tokenizer.clone(),
+                config.clip_weights.clone(),
+                config.sd_version,
+                &sd_config,
+                config.use_f16,
+                &device,
+                dtype,
+                use_guide_scale,
+                *first,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    let text_embeddings = Tensor::cat(&text_embeddings, D::Minus1)?;
+    debug!("Stable Diffusion: Text Embeddings - {text_embeddings:?}");
+
+    debug!("Stable Diffusion: Building the autoencoder.");
+    let vae_weights = ModelFile::Vae.get(config.vae_weights, config.sd_version, config.use_f16)?;
+    let vae = sd_config.build_vae(vae_weights, &device, dtype)?;
+    let init_latent_dist = match &config.img2img {
+        None => None,
+        Some(image_buf) => {
+            let image_buf = image_preprocess(image_buf)?.to_device(&device)?;
+            Some(vae.encode(&image_buf)?)
+        }
+    };
+    debug!("Stable Diffusion: Building the unet.");
+    let unet_weights =
+        ModelFile::Unet.get(config.unet_weights, config.sd_version, config.use_f16)?;
+    let unet = sd_config.build_unet(unet_weights, &device, 4, config.use_flash_attn, dtype)?;
+
+    let t_start = if config.img2img.is_some() {
+        n_steps - (n_steps as f64 * config.img2img_strength) as usize
+    } else {
+        0
+    };
+    let bsize = 1;
+
+    let vae_scale = match config.sd_version {
+        StableDiffusionVersion::V1_5
+        | StableDiffusionVersion::V2_1
+        | StableDiffusionVersion::Xl => 0.18215,
+        StableDiffusionVersion::Turbo => 0.13025,
+        StableDiffusionVersion::Custom => 0.13025,
+    };
+
+    // array of image buffers to gather the results
+    let mut images = Vec::with_capacity(config.num_samples);
+
+    for idx in 0..config.num_samples {
+        let timesteps = scheduler.timesteps();
+        let latents = match &init_latent_dist {
+            Some(init_latent_dist) => {
+                let latents = (init_latent_dist.sample()? * vae_scale)?.to_device(&device)?;
+                if t_start < timesteps.len() {
+                    let noise = latents.randn_like(0f64, 1f64)?;
+                    scheduler.add_noise(&latents, noise, timesteps[t_start])?
+                } else {
+                    latents
+                }
+            }
+            None => {
+                let latents = Tensor::randn(
+                    0f32,
+                    1f32,
+                    (bsize, 4, sd_config.height / 8, sd_config.width / 8),
+                    &device,
+                )?;
+                // scale the initial noise by the standard deviation required by the scheduler
+                (latents * scheduler.init_noise_sigma())?
+            }
+        };
+        let mut latents = latents.to_dtype(dtype)?;
+
+        debug!("Stable Diffusion: starting sampling");
+        for (timestep_index, &timestep) in timesteps.iter().enumerate() {
+            if timestep_index < t_start {
+                continue;
+            }
+            let start_time = std::time::Instant::now();
+            let latent_model_input = if use_guide_scale {
+                Tensor::cat(&[&latents, &latents], 0)?
+            } else {
+                latents.clone()
+            };
+
+            let latent_model_input = scheduler.scale_model_input(latent_model_input, timestep)?;
+            let noise_pred =
+                unet.forward(&latent_model_input, timestep as f64, &text_embeddings)?;
+
+            let noise_pred = if use_guide_scale {
+                let noise_pred = noise_pred.chunk(2, 0)?;
+                let (noise_pred_uncond, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
+
+                (noise_pred_uncond + ((noise_pred_text - noise_pred_uncond)? * guidance_scale)?)?
+            } else {
+                noise_pred
+            };
+
+            latents = scheduler.step(&noise_pred, timestep, &latents)?;
+            let dt = start_time.elapsed().as_secs_f32();
+            debug!(
+                "Stable Diffusion: step {}/{n_steps} done, {:.2}s",
+                timestep_index + 1,
+                dt
+            );
+
+            if config.intermediary_images {
+                let image_buf = vae.decode(&(&latents / vae_scale)?)?;
+                let image_buf = ((image_buf / 2.)? + 0.5)?.to_device(&Device::Cpu)?;
+                let image_buf = (image_buf * 255.)?.to_dtype(DType::U8)?.i(0)?;
+                let (channel, height, width) = image_buf.dims3()?;
+                if channel != 3 {
+                    anyhow::bail!("save_image expects an input of shape (3, height, width)")
+                }
+                let img = image_buf.permute((1, 2, 0))?.flatten_all()?;
+                let pixels = img.to_vec1::<u8>()?;
+                let image_u8: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
+                    match image::ImageBuffer::from_raw(width as u32, height as u32, pixels) {
+                        Some(image_u8) => image_u8,
+                        None => anyhow::bail!("error saving image"),
+                    };
+
+                images.push(image_u8);
+            }
+        }
+
+        debug!(
+            "Stable Diffusion: Generating the final image for sample {}/{}.",
+            idx + 1,
+            config.num_samples
+        );
+        let image_buf = vae.decode(&(&latents / vae_scale)?)?;
+        let image_buf = ((image_buf / 2.)? + 0.5)?.to_device(&Device::Cpu)?;
+        let image_buf = (image_buf.clamp(0f32, 1.)? * 255.)?
+            .to_dtype(DType::U8)?
+            .i(0)?;
+
+        let (channel, height, width) = image_buf.dims3()?;
+        if channel != 3 {
+            anyhow::bail!("save_image expects an input of shape (3, height, width)")
+        }
+        let img = image_buf.permute((1, 2, 0))?.flatten_all()?;
+        let pixels = img.to_vec1::<u8>()?;
+        let image_u8: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
+            match image::ImageBuffer::from_raw(width as u32, height as u32, pixels) {
+                Some(image_u8) => image_u8,
+                None => anyhow::bail!("error saving image"),
+            };
+
+        images.push(image_u8);
+    }
+
+    let scaled_images: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = images
+        .into_iter()
+        .map(|image| {
+            scale_image(
+                image,
+                config.scaled_width,
+                config.scaled_height,
+                config.image_position.clone(),
+            )
+        })
+        .collect();
