@@ -570,3 +570,6 @@ pub async fn sd(config: SDConfig) -> Result<Vec<ImageBuffer<image::Rgb<u8>, Vec<
             )
         })
         .collect();
+
+    Ok(scaled_images)
+}
