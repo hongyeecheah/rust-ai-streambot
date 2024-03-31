@@ -296,3 +296,138 @@ impl StreamData {
             if self.bitrate > self.bitrate_max {
                 self.bitrate_max = self.bitrate;
             }
+
+            // Bitrate min
+            if self.bitrate < self.bitrate_min {
+                self.bitrate_min = self.bitrate;
+            }
+
+            // Bitrate avg
+            self.bitrate_avg = (self.bitrate_avg + self.bitrate) / 2;
+        }
+
+        self.total_bits += bits; // Accumulate total bits
+
+        // IAT calculation remains the same
+        let iat = arrival_time
+            .checked_sub(self.last_arrival_time)
+            .unwrap_or(0);
+        self.iat = iat;
+
+        // IAT max
+        if iat > self.iat_max {
+            self.iat_max = iat;
+        }
+
+        // IAT min
+        if iat < self.iat_min {
+            self.iat_min = iat;
+        }
+
+        // IAT avg
+        self.iat_avg = (self.iat_avg + iat) / 2;
+
+        self.last_arrival_time = arrival_time;
+    }
+}
+
+pub struct Tr101290Errors {
+    // p1 errors
+    pub ts_sync_byte_errors: u32,
+    pub sync_byte_errors: u32,
+    pub continuity_counter_errors: u32,
+    pub pat_errors: u32,
+    pub pmt_errors: u32,
+    pub pid_map_errors: u32,
+    // p2 errors
+    pub transport_error_indicator_errors: u32,
+    pub crc_errors: u32,
+    pub pcr_repetition_errors: u32,
+    pub pcr_discontinuity_indicator_errors: u32,
+    pub pcr_accuracy_errors: u32,
+    pub pts_errors: u32,
+    pub cat_errors: u32,
+}
+
+impl fmt::Display for Tr101290Errors {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "\
+            TS Sync Byte Errors: {}, \
+            Sync Byte Errors: {}, \
+            Continuity Counter Errors: {}, \
+            PAT Errors: {}, \
+            PMT Errors: {}, \
+            PID Map Errors: {}, \
+            Transport Error Indicator Errors: {}, \
+            CRC Errors: {}, \
+            PCR Repetition Errors: {}, \
+            PCR Discontinuity Indicator Errors: {}, \
+            PCR Accuracy Errors: {}, \
+            PTS Errors: {}, \
+            CAT Errors: {}",
+            self.ts_sync_byte_errors,
+            self.sync_byte_errors,
+            self.continuity_counter_errors,
+            self.pat_errors,
+            self.pmt_errors,
+            self.pid_map_errors,
+            // p2 errors
+            self.transport_error_indicator_errors,
+            self.crc_errors,
+            self.pcr_repetition_errors,
+            self.pcr_discontinuity_indicator_errors,
+            self.pcr_accuracy_errors,
+            self.pts_errors,
+            self.cat_errors
+        )
+    }
+}
+
+impl Tr101290Errors {
+    pub fn new() -> Self {
+        Tr101290Errors {
+            ts_sync_byte_errors: 0,
+            sync_byte_errors: 0,
+            continuity_counter_errors: 0,
+            pat_errors: 0,
+            pmt_errors: 0,
+            pid_map_errors: 0,
+            // p2
+            transport_error_indicator_errors: 0,
+            crc_errors: 0,
+            pcr_repetition_errors: 0,
+            pcr_discontinuity_indicator_errors: 0,
+            pcr_accuracy_errors: 0,
+            pts_errors: 0,
+            cat_errors: 0,
+        }
+    }
+}
+
+// TR 101 290 Priority 1 Check
+pub fn tr101290_p1_check(packet: &[u8], errors: &mut Tr101290Errors) {
+    // p1
+    if packet[0] != 0x47 {
+        errors.sync_byte_errors += 1;
+    }
+
+    // TODO: ... other checks, updating the respective counters ...
+}
+
+// TR 101 290 Priority 2 Check
+pub fn tr101290_p2_check(packet: &[u8], errors: &mut Tr101290Errors) {
+    // p2
+
+    if (packet[1] & 0x80) != 0 {
+        errors.transport_error_indicator_errors += 1;
+    }
+    // TODO: ... other checks, updating the respective counters ...
+}
+
+// Implement a function to extract PID from a packet
+pub fn extract_pid(packet: &[u8]) -> u16 {
+    if packet.len() < TS_PACKET_SIZE {
+        return 0; // Packet size is incorrect
+    }
