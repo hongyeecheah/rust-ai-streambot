@@ -608,3 +608,150 @@ pub fn process_packet(
             // No StreamData instance found for this PID, possibly no PMT yet
             if pmt_pid != 0xFFFF {
                 debug!("ProcessPacket: New PID {} Found, adding to PID map.", pid);
+            } else {
+                // PMT packet not found yet, add the stream_data_packet to the pid_map
+                let mut stream_data = Arc::new(StreamData::new(
+                    Arc::new(Vec::new()), // Ensure packet_data is Arc<Vec<u8>>
+                    0,
+                    0,
+                    stream_data_packet.pid,
+                    stream_data_packet.stream_type.clone(),
+                    stream_data_packet.start_time,
+                    stream_data_packet.timestamp,
+                    stream_data_packet.continuity_counter,
+                ));
+                Arc::make_mut(&mut stream_data).update_stats(packet.len(), arrival_time);
+
+                // print out each field of structure
+                info!("STATUS::PACKET:ADD[{}] pid: {} stream_type: {} bitrate: {} bitrate_max: {} bitrate_min: {} bitrate_avg: {} iat: {} iat_max: {} iat_min: {} iat_avg: {} errors: {} continuity_counter: {} timestamp: {} uptime: {}", stream_data.pid, stream_data.pid, stream_data.stream_type, stream_data.bitrate, stream_data.bitrate_max, stream_data.bitrate_min, stream_data.bitrate_avg, stream_data.iat, stream_data.iat_max, stream_data.iat_min, stream_data.iat_avg, stream_data.error_count, stream_data.continuity_counter, stream_data.timestamp, 0);
+
+                pid_map.insert(pid, stream_data);
+            }
+        }
+    }
+}
+
+// Use the stored PAT packet
+pub fn update_pid_map(pmt_packet: &[u8], last_pat_packet: &[u8]) {
+    let mut pid_map = PID_MAP.lock().unwrap();
+
+    // Process the stored PAT packet to find program numbers and corresponding PMT PIDs
+    let program_pids = last_pat_packet
+        .chunks_exact(TS_PACKET_SIZE)
+        .flat_map(parse_pat)
+        .collect::<Vec<_>>();
+
+    for pat_entry in program_pids.iter() {
+        let program_number = pat_entry.program_number;
+        let pmt_pid = pat_entry.pmt_pid;
+
+        // Log for debugging
+        debug!(
+            "UpdatePIDmap: Processing Program Number: {}, PMT PID: {}",
+            program_number, pmt_pid
+        );
+
+        // Ensure the current PMT packet matches the PMT PID from the PAT
+        if extract_pid(pmt_packet) == pmt_pid {
+            let pmt = parse_pmt(pmt_packet);
+
+            for pmt_entry in pmt.entries.iter() {
+                debug!(
+                    "UpdatePIDmap: Processing PMT PID: {} for Stream PID: {} Type {}",
+                    pmt_pid, pmt_entry.stream_pid, pmt_entry.stream_type
+                );
+
+                let stream_pid = pmt_entry.stream_pid;
+                let stream_type = match pmt_entry.stream_type {
+                    0x00 => "Reserved",
+                    0x01 => "ISO/IEC 11172 MPEG-1 Video",
+                    0x02 => "ISO/IEC 13818-2 MPEG-2 Video",
+                    0x03 => "ISO/IEC 11172 MPEG-1 Audio",
+                    0x04 => "ISO/IEC 13818-3 MPEG-2 Audio",
+                    0x05 => "ISO/IEC 13818-1 Private Section",
+                    0x06 => "ISO/IEC 13818-1 Private PES data packets",
+                    0x07 => "ISO/IEC 13522 MHEG",
+                    0x08 => "ISO/IEC 13818-1 Annex A DSM CC",
+                    0x09 => "H222.1",
+                    0x0A => "ISO/IEC 13818-6 type A",
+                    0x0B => "ISO/IEC 13818-6 type B",
+                    0x0C => "ISO/IEC 13818-6 type C",
+                    0x0D => "ISO/IEC 13818-6 type D",
+                    0x0E => "ISO/IEC 13818-1 auxillary",
+                    0x0F => "13818-7 AAC Audio with ADTS transport syntax",
+                    0x10 => "14496-2 Visual (MPEG-4 part 2 video)",
+                    0x11 => "14496-3 MPEG-4 Audio with LATM transport syntax (14496-3/AMD 1)",
+                    0x12 => "14496-1 SL-packetized or FlexMux stream in PES packets",
+                    0x13 => "14496-1 SL-packetized or FlexMux stream in 14496 sections",
+                    0x14 => "ISO/IEC 13818-6 Synchronized Download Protocol",
+                    0x15 => "Metadata in PES packets",
+                    0x16 => "Metadata in metadata_sections",
+                    0x17 => "Metadata in 13818-6 Data Carousel",
+                    0x18 => "Metadata in 13818-6 Object Carousel",
+                    0x19 => "Metadata in 13818-6 Synchronized Download Protocol",
+                    0x1A => "13818-11 MPEG-2 IPMP stream",
+                    0x1B => "H.264/14496-10 video (MPEG-4/AVC)",
+                    0x24 => "H.265 video (MPEG-H/HEVC)",
+                    0x42 => "AVS Video",
+                    0x7F => "IPMP stream",
+                    0x81 => "ATSC A/52 AC-3",
+                    0x86 => "SCTE 35 Splice Information Table",
+                    0x87 => "ATSC A/52e AC-3",
+                    _ if pmt_entry.stream_type < 0x80 => "ISO/IEC 13818-1 reserved",
+                    _ => "User Private",
+                };
+
+                let timestamp = current_unix_timestamp_ms().unwrap_or(0);
+
+                if !pid_map.contains_key(&stream_pid) {
+                    let mut stream_data = Arc::new(StreamData::new(
+                        Arc::new(Vec::new()), // Ensure packet_data is Arc<Vec<u8>>
+                        0,
+                        0,
+                        stream_pid,
+                        stream_type.to_string(),
+                        timestamp,
+                        timestamp,
+                        0,
+                    ));
+                    // update stream_data stats
+                    Arc::make_mut(&mut stream_data).update_stats(pmt_packet.len(), timestamp);
+
+                    // print out each field of structure
+                    info!("STATUS::STREAM:CREATE[{}] pid: {} stream_type: {} bitrate: {} bitrate_max: {} bitrate_min: {} bitrate_avg: {} iat: {} iat_max: {} iat_min: {} iat_avg: {} errors: {} continuity_counter: {} timestamp: {} uptime: {}", stream_data.pid, stream_data.pid, stream_data.stream_type, stream_data.bitrate, stream_data.bitrate_max, stream_data.bitrate_min, stream_data.bitrate_avg, stream_data.iat, stream_data.iat_max, stream_data.iat_min, stream_data.iat_avg, stream_data.error_count, stream_data.continuity_counter, stream_data.timestamp, 0);
+
+                    pid_map.insert(stream_pid, stream_data);
+                } else {
+                    // get the stream data so we can update it
+                    let stream_data_arc = pid_map.get_mut(&stream_pid).unwrap();
+                    let mut stream_data = Arc::clone(stream_data_arc);
+
+                    // update the stream type
+                    Arc::make_mut(&mut stream_data).update_stream_type(stream_type.to_string());
+
+                    // print out each field of structure
+                    debug!("STATUS::STREAM:UPDATE[{}] pid: {} stream_type: {} bitrate: {} bitrate_max: {} bitrate_min: {} bitrate_avg: {} iat: {} iat_max: {} iat_min: {} iat_avg: {} errors: {} continuity_counter: {} timestamp: {} uptime: {}", stream_data.pid, stream_data.pid, stream_data.stream_type, stream_data.bitrate, stream_data.bitrate_max, stream_data.bitrate_min, stream_data.bitrate_avg, stream_data.iat, stream_data.iat_max, stream_data.iat_min, stream_data.iat_avg, stream_data.error_count, stream_data.continuity_counter, stream_data.timestamp, 0);
+
+                    // write the stream_data back to the pid_map with modified values
+                    pid_map.insert(stream_pid, stream_data);
+                }
+            }
+        } else {
+            error!("UpdatePIDmap: Skipping PMT PID: {} as it does not match with current PMT packet PID", pmt_pid);
+        }
+    }
+}
+
+pub fn determine_stream_type(pid: u16) -> String {
+    let pid_map = PID_MAP.lock().unwrap();
+
+    // check if pid already is mapped, if so return the stream type already stored
+    if let Some(stream_data) = pid_map.get(&pid) {
+        return stream_data.stream_type.clone();
+    }
+
+    pid_map
+        .get(&pid)
+        .map(|stream_data| stream_data.stream_type.clone())
+        .unwrap_or_else(|| "unknown".to_string())
+}
