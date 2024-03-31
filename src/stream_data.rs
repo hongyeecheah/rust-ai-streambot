@@ -431,3 +431,180 @@ pub fn extract_pid(packet: &[u8]) -> u16 {
     if packet.len() < TS_PACKET_SIZE {
         return 0; // Packet size is incorrect
     }
+
+    let transport_error = (packet[1] & 0x80) != 0;
+    if transport_error {
+        return 0xFFFF; // Packet has a transport error
+    }
+
+    // Extract PID from packet
+    ((packet[1] as u16 & 0x1F) << 8) | packet[2] as u16
+}
+
+// Story the PAT packet and PMT PID
+pub struct PmtInfo {
+    pub pid: u16,
+    pub packet: Vec<u8>,
+}
+
+// Helper function to parse PAT and update global PAT packet storage
+pub fn parse_and_store_pat(packet: &[u8]) -> PmtInfo {
+    let pat_entries = parse_pat(packet);
+    let mut pmt_info = PmtInfo {
+        pid: 0xFFFF,
+        packet: Vec::new(),
+    };
+    pmt_info.packet = packet.to_vec();
+
+    // Assuming there's only one program for simplicity, update PMT PID
+    if let Some(first_entry) = pat_entries.first() {
+        pmt_info.pid = first_entry.pmt_pid;
+    }
+    pmt_info
+}
+
+pub fn parse_pat(packet: &[u8]) -> Vec<PatEntry> {
+    let mut entries = Vec::new();
+
+    // Check for minimum packet size
+    if packet.len() < TS_PACKET_SIZE {
+        return entries;
+    }
+
+    // Check if Payload Unit Start Indicator (PUSI) is set
+    let pusi = (packet[1] & 0x40) != 0;
+    if !pusi {
+        // If Payload Unit Start Indicator is not set, this packet does not start a new PAT
+        return entries;
+    }
+
+    let adaptation_field_control = (packet[3] & 0x30) >> 4;
+    let mut offset = 4; // start after TS header
+
+    // Check for adaptation field and skip it
+    if adaptation_field_control == 0x02 || adaptation_field_control == 0x03 {
+        let adaptation_field_length = packet[4] as usize;
+        offset += 1 + adaptation_field_length; // +1 for the length byte itself
+    }
+
+    // Pointer field indicates the start of the PAT section
+    let pointer_field = packet[offset] as usize;
+    offset += 1 + pointer_field; // Skip pointer field
+
+    // Now, 'offset' points to the start of the PAT section
+    while offset + 4 <= packet.len() {
+        let program_number = ((packet[offset] as u16) << 8) | (packet[offset + 1] as u16);
+        let pmt_pid = (((packet[offset + 2] as u16) & 0x1F) << 8) | (packet[offset + 3] as u16);
+
+        // Only add valid entries (non-zero program_number and pmt_pid)
+        if program_number != 0 && pmt_pid != 0 && pmt_pid < 0x1FFF && program_number < 100 {
+            entries.push(PatEntry {
+                program_number,
+                pmt_pid,
+            });
+        }
+
+        debug!(
+            "ParsePAT: Program Number: {} PMT PID: {}",
+            program_number, pmt_pid
+        );
+
+        offset += 4; // Move to the next PAT entry
+    }
+
+    entries
+}
+
+pub fn parse_pmt(packet: &[u8]) -> Pmt {
+    let mut entries = Vec::new();
+    let program_number = ((packet[8] as u16) << 8) | (packet[9] as u16);
+
+    // Calculate the starting position for stream entries
+    let section_length = (((packet[6] as usize) & 0x0F) << 8) | packet[7] as usize;
+    let program_info_length = (((packet[15] as usize) & 0x0F) << 8) | packet[16] as usize;
+    let mut i = 17 + program_info_length; // Starting index of the first stream in the PMT
+
+    debug!(
+        "ParsePMT: Program Number: {} PMT PID: {} starting at position {}",
+        program_number,
+        extract_pid(packet),
+        i
+    );
+    while i + 5 <= packet.len() && i < 17 + section_length - 4 {
+        let stream_type = packet[i];
+        let stream_pid = (((packet[i + 1] as u16) & 0x1F) << 8) | (packet[i + 2] as u16);
+        let es_info_length = (((packet[i + 3] as usize) & 0x0F) << 8) | packet[i + 4] as usize;
+        i += 5 + es_info_length; // Update index to point to next stream's info
+
+        entries.push(PmtEntry {
+            stream_pid,
+            stream_type,
+        });
+        debug!(
+            "ParsePMT: Stream PID: {}, Stream Type: {}",
+            stream_pid, stream_type
+        );
+    }
+
+    Pmt { entries }
+}
+
+// Invoke this function for each MPEG-TS packet
+pub fn process_packet(
+    stream_data_packet: &mut StreamData,
+    errors: &mut Tr101290Errors,
+    is_mpegts: bool,
+    pmt_pid: u16,
+) {
+    let packet: &[u8] = &stream_data_packet.packet[stream_data_packet.packet_start
+        ..stream_data_packet.packet_start + stream_data_packet.packet_len];
+    tr101290_p1_check(packet, errors);
+    tr101290_p2_check(packet, errors);
+
+    let pid = stream_data_packet.pid;
+    let arrival_time = current_unix_timestamp_ms().unwrap_or(0);
+
+    let mut pid_map = PID_MAP.lock().unwrap();
+
+    // TODO: high debug level output, may need a flag specific to this dump
+    //info!("PID Map Contents: {:#?}", pid_map);
+
+    // Check if the PID map already has an entry for this PID
+    match pid_map.get_mut(&pid) {
+        Some(stream_data_arc) => {
+            // Existing StreamData instance found, update it
+            let mut stream_data = Arc::clone(stream_data_arc);
+            Arc::make_mut(&mut stream_data).update_stats(packet.len(), arrival_time);
+            Arc::make_mut(&mut stream_data).increment_count(1);
+            if stream_data.pid != 0x1FFF && is_mpegts {
+                Arc::make_mut(&mut stream_data)
+                    .set_continuity_counter(stream_data_packet.continuity_counter);
+            }
+            let uptime = arrival_time - stream_data.start_time;
+
+            // print out each field of structure
+            debug!("STATUS::PACKET:MODIFY[{}] pid: {} stream_type: {} bitrate: {} bitrate_max: {} bitrate_min: {} bitrate_avg: {} iat: {} iat_max: {} iat_min: {} iat_avg: {} errors: {} continuity_counter: {} timestamp: {} uptime: {} packet_offset: {}, packet_len: {}",
+                stream_data.pid, stream_data.pid, stream_data.stream_type, stream_data.bitrate, stream_data.bitrate_max, stream_data.bitrate_min, stream_data.bitrate_avg, stream_data.iat, stream_data.iat_max, stream_data.iat_min, stream_data.iat_avg, stream_data.error_count, stream_data.continuity_counter, stream_data.timestamp, uptime, stream_data_packet.packet_start, stream_data_packet.packet_len);
+
+            stream_data_packet.bitrate = stream_data.bitrate;
+            stream_data_packet.bitrate_avg = stream_data.bitrate_avg;
+            stream_data_packet.bitrate_max = stream_data.bitrate_max;
+            stream_data_packet.bitrate_min = stream_data.bitrate_min;
+            stream_data_packet.iat = stream_data.iat;
+            stream_data_packet.iat_avg = stream_data.iat_avg;
+            stream_data_packet.iat_max = stream_data.iat_max;
+            stream_data_packet.iat_min = stream_data.iat_min;
+            stream_data_packet.stream_type = stream_data.stream_type.clone();
+            stream_data_packet.start_time = stream_data.start_time;
+            stream_data_packet.error_count = stream_data.error_count;
+            stream_data_packet.last_arrival_time = stream_data.last_arrival_time;
+            stream_data_packet.total_bits = stream_data.total_bits;
+            stream_data_packet.count = stream_data.count;
+
+            // write the stream_data back to the pid_map with modified values
+            pid_map.insert(pid, stream_data);
+        }
+        None => {
+            // No StreamData instance found for this PID, possibly no PMT yet
+            if pmt_pid != 0xFFFF {
+                debug!("ProcessPacket: New PID {} Found, adding to PID map.", pid);
