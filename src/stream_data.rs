@@ -755,3 +755,174 @@ pub fn determine_stream_type(pid: u16) -> String {
         .map(|stream_data| stream_data.stream_type.clone())
         .unwrap_or_else(|| "unknown".to_string())
 }
+
+// Helper function to identify the video PID from the stored PAT packet and return the PID and codec
+pub fn identify_video_pid(pmt_packet: &[u8]) -> Option<(u16, Codec)> {
+    let pmt = parse_pmt(pmt_packet);
+    pmt.entries.iter().find_map(|entry| {
+        let codec = match entry.stream_type {
+            0x01..=0x02 => Some(Codec::MPEG2), // MPEG-2 Video
+            0x1B => Some(Codec::H264),         // H.264 Video
+            0x24 => Some(Codec::H265),         // H.265 Video
+            _ => None,
+        };
+        codec.map(|c| (entry.stream_pid, c))
+    })
+}
+
+// Check if the packet is MPEG-TS or SMPTE 2110
+pub fn is_mpegts_or_smpte2110(packet: &[u8]) -> i32 {
+    // Check for MPEG-TS (starts with 0x47 sync byte)
+    if packet.starts_with(&[0x47]) {
+        return 1;
+    }
+
+    // Basic check for RTP (which SMPTE ST 2110 uses)
+    // This checks if the first byte is 0x80 or 0x81
+    // This might need more robust checks based on requirements
+    if packet.len() > 12 && (packet[0] == 0x80 || packet[0] == 0x81) {
+        // TODO: Check payload type or other RTP header fields here if necessary
+        return 2; // Assuming it's SMPTE ST 2110 for now
+    }
+
+    0 // Not MPEG-TS or SMPTE 2110
+}
+
+// ## RFC 4175 SMPTE2110 header functions ##
+/*const RFC_4175_EXT_SEQ_NUM_LEN: usize = 2;
+const RFC_4175_HEADER_LEN: usize = 6; // Note: extended sequence number not included*/ // TODO: implement RFC 4175 SMPTE2110 header functions
+
+fn get_extended_sequence_number(buf: &[u8]) -> u16 {
+    ((buf[0] as u16) << 8) | buf[1] as u16
+}
+
+fn get_line_length(buf: &[u8]) -> u16 {
+    ((buf[0] as u16) << 8) | buf[1] as u16
+}
+
+fn get_line_field_id(buf: &[u8]) -> u8 {
+    buf[2] >> 7
+}
+
+fn get_line_number(buf: &[u8]) -> u16 {
+    ((buf[2] as u16 & 0x7f) << 8) | buf[3] as u16
+}
+
+fn get_line_continuation(buf: &[u8]) -> u8 {
+    buf[4] >> 7
+}
+
+fn get_line_offset(buf: &[u8]) -> u16 {
+    ((buf[4] as u16 & 0x7f) << 8) | buf[5] as u16
+}
+// ## End of RFC 4175 SMPTE2110 header functions ##
+
+// Process the packet and return a vector of SMPTE ST 2110 packets
+pub fn process_smpte2110_packet(
+    payload_offset: usize,
+    packet: Arc<Vec<u8>>,
+    _packet_size: usize,
+    start_time: u64,
+    debug: bool,
+) -> Vec<StreamData> {
+    let mut streams = Vec::new();
+    let mut offset = payload_offset;
+
+    let len = packet.len();
+
+    // Check if the packet is large enough to contain an RTP header
+    while offset + 12 <= len {
+        // Check for RTP header marker
+        let packet_arc = Arc::clone(&packet);
+        if packet_arc[offset] == 0x80 || packet_arc[offset] == 0x81 {
+            let rtp_packet = &packet[offset..];
+
+            // Create an RtpReader
+            if let Ok(rtp) = RtpReader::new(rtp_packet) {
+                // Extract the timestamp and payload type
+                let timestamp = rtp.timestamp();
+                let payload_type = rtp.payload_type();
+                let rtp_payload = rtp.payload();
+                let rtp_payload_offset = rtp.payload_offset();
+
+                // Extract SMPTE 2110 specific fields
+                let line_length = get_line_length(rtp_packet);
+                let rtp_packet_size = line_length as usize;
+                let line_number = get_line_number(rtp_packet);
+                let extended_sequence_number = get_extended_sequence_number(rtp_packet);
+                let line_offset = get_line_offset(rtp_packet);
+                let field_id = get_line_field_id(rtp_packet);
+                let line_continuation = get_line_continuation(rtp_packet);
+
+                // Calculate the length of the RTP payload
+                let rtp_payload_length = rtp_payload.len();
+
+                // Use payload type as PID (for the purpose of this example)
+                let pid = payload_type as u16;
+                let stream_type = payload_type.to_string();
+
+                // Create new StreamData instance
+                let mut stream_data = StreamData::new(
+                    packet_arc,
+                    rtp_payload_offset,
+                    rtp_payload_length,
+                    pid,
+                    stream_type,
+                    start_time,
+                    timestamp as u64,
+                    0,
+                );
+
+                // Update StreamData stats and RTP fields
+                stream_data
+                    .update_stats(rtp_payload_length, current_unix_timestamp_ms().unwrap_or(0));
+                stream_data.set_rtp_fields(
+                    timestamp,
+                    payload_type,
+                    payload_type.to_string(),
+                    line_number,
+                    line_offset,
+                    line_length,
+                    field_id,
+                    line_continuation,
+                    extended_sequence_number,
+                );
+                if debug {
+                    info!(
+                    "SMPTE ST 2110 packet: offset: {} size: {} timestamp: {}, payload_type: {}, line_number: {}, line_offset: {}, line_length: {}, field_id: {}, line_continuation: {}, extended_sequence_number: {}",
+                    rtp_payload_offset, rtp_payload_length, timestamp, payload_type, line_number, line_offset, line_length, field_id, line_continuation, extended_sequence_number
+                );
+                }
+
+                // Add the StreamData to the stream list
+                streams.push(stream_data);
+
+                // Move to the next RTP packet
+                offset += rtp_packet_size;
+            } else {
+                error!("Error parsing RTP header, not SMPTE ST 2110");
+            }
+        } else {
+            error!("No RTP header detected, not SMPTE ST 2110");
+        }
+    }
+
+    streams
+}
+
+// Process the packet and return a vector of MPEG-TS packets
+pub fn process_mpegts_packet(
+    payload_offset: usize,
+    packet: Arc<Vec<u8>>,
+    packet_size: usize,
+    start_time: u64,
+) -> Vec<StreamData> {
+    let mut start = payload_offset;
+    let mut read_size = packet_size;
+    let mut streams = Vec::new();
+
+    let len = packet.len();
+
+    while start + read_size <= len {
+        let chunk = &packet[start..start + read_size];
+        if chunk[0] == 0x47 {
