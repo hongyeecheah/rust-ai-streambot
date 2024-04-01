@@ -926,3 +926,37 @@ pub fn process_mpegts_packet(
     while start + read_size <= len {
         let chunk = &packet[start..start + read_size];
         if chunk[0] == 0x47 {
+            // Check for MPEG-TS sync byte
+            read_size = packet_size; // reset read_size
+
+            let pid = extract_pid(chunk);
+
+            let stream_type = determine_stream_type(pid); // Implement this function based on PAT/PMT parsing
+            let timestamp = ((chunk[4] as u64) << 25)
+                | ((chunk[5] as u64) << 17)
+                | ((chunk[6] as u64) << 9)
+                | ((chunk[7] as u64) << 1)
+                | ((chunk[8] as u64) >> 7);
+            let continuity_counter = chunk[3] & 0x0F;
+
+            let mut stream_data = StreamData::new(
+                Arc::clone(&packet),
+                start,
+                packet_size,
+                pid,
+                stream_type,
+                start_time,
+                timestamp,
+                continuity_counter,
+            );
+            stream_data.update_stats(packet_size, current_unix_timestamp_ms().unwrap_or(0));
+            streams.push(stream_data);
+        } else {
+            error!("ProcessPacket: Not MPEG-TS");
+            read_size = 1; // Skip to the next byte
+        }
+        start += read_size;
+    }
+
+    streams
+}
