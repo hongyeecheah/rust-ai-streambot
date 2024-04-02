@@ -11,4 +11,11 @@ static SYSTEM: Lazy<Mutex<(System, Instant)>> = Lazy::new(|| {
     Mutex::new((system, Instant::now()))
 });
 
-#[derive(Serialize, 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SystemStats {
+    total_memory: u64,
+    used_memory: u64,
+    total_swap: u64,
+    used_swap: u64,
+    cpu_usage: f32,
+    cpu_count: usize
