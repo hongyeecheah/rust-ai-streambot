@@ -25,4 +25,14 @@ pub struct SystemStats {
     host_name: String,
     kernel_version: String,
     os_version: String,
-    networ
+    network_stats: Vec<NetworkStats>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct NetworkStats {
+    name: String,
+    received: u64,
+    transmitted: u64,
+}
+
+#[deriv
