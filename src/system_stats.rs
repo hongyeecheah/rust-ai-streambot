@@ -18,4 +18,11 @@ pub struct SystemStats {
     total_swap: u64,
     used_swap: u64,
     cpu_usage: f32,
-    cpu_count: usize
+    cpu_count: usize,
+    core_count: usize,
+    boot_time: u64,
+    load_avg: LoadAverage,
+    host_name: String,
+    kernel_version: String,
+    os_version: String,
+    networ
