@@ -5,4 +5,10 @@ use std::time::{Duration, Instant};
 use sysinfo::{NetworkExt, NetworksExt};
 use sysinfo::{ProcessorExt, System, SystemExt};
 
-static SYSTEM: Lazy<Mutex<(System, Instant)>> =
+static SYSTEM: Lazy<Mutex<(System, Instant)>> = Lazy::new(|| {
+    let mut system = System::new_all();
+    system.refresh_all(); // Initial refresh
+    Mutex::new((system, Instant::now()))
+});
+
+#[derive(Serialize, 
