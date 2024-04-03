@@ -43,4 +43,7 @@ pub struct LoadAverage {
 }
 
 pub fn get_system_stats() -> SystemStats {
-    let mut
+    let mut system_and_instant = SYSTEM.lock().unwrap();
+    let (system, last_updated) = &mut *system_and_instant;
+
+    // Only refresh if it's been more than a second s
