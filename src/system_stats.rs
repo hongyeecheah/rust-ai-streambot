@@ -35,4 +35,12 @@ pub struct NetworkStats {
     transmitted: u64,
 }
 
-#[deriv
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LoadAverage {
+    one: f64,
+    five: f64,
+    fifteen: f64,
+}
+
+pub fn get_system_stats() -> SystemStats {
+    let mut
