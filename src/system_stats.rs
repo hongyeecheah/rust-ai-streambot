@@ -55,4 +55,7 @@ pub fn get_system_stats() -> SystemStats {
     let host_name = system.host_name().unwrap_or_else(|| "Unknown".to_string());
     let kernel_version = system
         .kernel_version()
-        .unwrap_or_else(|| "Unknown".to_strin
+        .unwrap_or_else(|| "Unknown".to_string());
+    let os_version = system.os_version().unwrap_or_else(|| "Unknown".to_string());
+    let sys_load_avg = system.load_average();
+    let load_avg = LoadA
