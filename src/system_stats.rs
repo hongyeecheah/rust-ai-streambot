@@ -58,4 +58,10 @@ pub fn get_system_stats() -> SystemStats {
         .unwrap_or_else(|| "Unknown".to_string());
     let os_version = system.os_version().unwrap_or_else(|| "Unknown".to_string());
     let sys_load_avg = system.load_average();
-    let load_avg = LoadA
+    let load_avg = LoadAverage {
+        one: sys_load_avg.one,
+        five: sys_load_avg.five,
+        fifteen: sys_load_avg.fifteen,
+    };
+
+    let cpu_count = system.processors().len(
