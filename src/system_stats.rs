@@ -52,4 +52,7 @@ pub fn get_system_stats() -> SystemStats {
         *last_updated = Instant::now();
     }
 
-    let h
+    let host_name = system.host_name().unwrap_or_else(|| "Unknown".to_string());
+    let kernel_version = system
+        .kernel_version()
+        .unwrap_or_else(|| "Unknown".to_strin
