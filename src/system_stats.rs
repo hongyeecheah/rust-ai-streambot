@@ -64,4 +64,8 @@ pub fn get_system_stats() -> SystemStats {
         fifteen: sys_load_avg.fifteen,
     };
 
-    let cpu_count = system.processors().len(
+    let cpu_count = system.processors().len();
+    let boot_time = system.boot_time();
+    let core_count = system.physical_core_count().unwrap_or_else(|| 0);
+    let networks = system.networks();
+    let netw
