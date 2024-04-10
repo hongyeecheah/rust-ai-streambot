@@ -72,4 +72,12 @@ pub fn get_system_stats() -> SystemStats {
         .iter()
         .map(|(&ref name, data)| NetworkStats {
             name: name.to_string(),
-            received: data.received
+            received: data.received(),
+            transmitted: data.transmitted(),
+        })
+        .collect();
+
+    let cpu_usage = system.global_processor_info().cpu_usage();
+
+    SystemStats {
+        
