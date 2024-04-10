@@ -68,4 +68,8 @@ pub fn get_system_stats() -> SystemStats {
     let boot_time = system.boot_time();
     let core_count = system.physical_core_count().unwrap_or_else(|| 0);
     let networks = system.networks();
-    let netw
+    let network_stats = networks
+        .iter()
+        .map(|(&ref name, data)| NetworkStats {
+            name: name.to_string(),
+            received: data.received
