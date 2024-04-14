@@ -80,4 +80,8 @@ pub fn get_system_stats() -> SystemStats {
     let cpu_usage = system.global_processor_info().cpu_usage();
 
     SystemStats {
-        
+        total_memory: system.total_memory(),
+        used_memory: system.used_memory(),
+        total_swap: system.total_swap(),
+        used_swap: system.used_swap(),
+        cpu_us
