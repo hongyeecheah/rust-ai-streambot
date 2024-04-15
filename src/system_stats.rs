@@ -84,4 +84,13 @@ pub fn get_system_stats() -> SystemStats {
         used_memory: system.used_memory(),
         total_swap: system.total_swap(),
         used_swap: system.used_swap(),
-        cpu_us
+        cpu_usage,
+        cpu_count,
+        core_count,
+        boot_time,
+        load_avg,
+        host_name,
+        kernel_version,
+        os_version,
+        network_stats,
+ 
