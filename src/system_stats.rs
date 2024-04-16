@@ -93,4 +93,5 @@ pub fn get_system_stats() -> SystemStats {
         kernel_version,
         os_version,
         network_stats,
- 
+    }
+}
