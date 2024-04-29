@@ -302,3 +302,125 @@ async fn on_msg(
 
                 // If adding the sentence to the chunk would exceed 500 characters,
                 // send the current chunk and start a new one
+                if chunk.len() + trimmed_sentence.len() + 1 > 500 {
+                    let formatted_chunk = chunk.replace("http", "hxxp");
+
+                    // Send message to the twitch channel
+                    client
+                        .privmsg(msg.channel(), &format!("{}", formatted_chunk))
+                        .reply_to(msg.message_id())
+                        .send()
+                        .await?;
+
+                    chunk.clear();
+                }
+
+                // Add the sentence to the current chunk
+                if !chunk.is_empty() {
+                    chunk.push(' ');
+                }
+                chunk.push_str(trimmed_sentence);
+            }
+
+            // Send the remaining chunk for the current section
+            let formatted_chunk = chunk.replace("http", "hxxp");
+
+            // remove any dangling sentences at the end of the chunk without a end of sentence punctuation
+            let formatted_chunk = formatted_chunk.trim_end_matches(|c: char| c.is_whitespace());
+
+            // Send message to the twitch channel
+            if !formatted_chunk.is_empty() {
+                client
+                    .privmsg(msg.channel(), &format!("{}", formatted_chunk))
+                    .reply_to(msg.message_id())
+                    .send()
+                    .await?;
+            }
+        }
+
+        // add message to the chat_messages history of strings
+        let full_message = format!(
+            "{}{}{} {} asked {}{}{}{} {}{}{}",
+            bos_token,
+            start_token,
+            user_name,
+            msg.sender().name(),
+            msg.text().to_string(),
+            end_token,
+            assistant_start_token,
+            assistant_name,
+            truncated_answer,
+            assistant_end_token,
+            eos_token
+        );
+        chat_messages.push(full_message.clone());
+
+        // Insert the new message into the database
+        conn.execute(
+            "INSERT INTO chat_history (user_id, message) VALUES (?, ?)",
+            params![user_id, full_message],
+        )?;
+
+        // Send message to the main loop through mpsc channels
+        tx.send(format!(
+            "!chat {} said {}",
+            msg.sender().name(),
+            msg.text().to_string()
+        ))
+        .await?;
+
+        return Ok(());
+    }
+
+    if msg.text().starts_with("!message") {
+        let message = msg.text().splitn(2, ' ').nth(1).unwrap_or("");
+
+        std::io::stdout().flush().unwrap();
+        log::info!(
+            "Twitch recieved an LLM message from {}: {}",
+            msg.sender().name(),
+            message
+        );
+        std::io::stdout().flush().unwrap();
+
+        // Send message to the LLM through mpsc channels
+        tx.send(format!(
+            "!message {} said {}",
+            msg.sender().name(),
+            message.to_string()
+        ))
+        .await?;
+
+        client
+            .privmsg(
+                msg.channel(),
+                &format!(
+                    "Thank you for your message {}. I will speak about it in a moment!",
+                    msg.sender().name()
+                ),
+            )
+            .reply_to(msg.message_id())
+            .send()
+            .await?;
+
+        return Ok(());
+    }
+
+    std::io::stdout().flush().unwrap();
+    log::info!(
+        "Twitch recieved a help message from {}",
+        msg.sender().name()
+    );
+    std::io::stdout().flush().unwrap();
+
+    client
+        .privmsg(
+            msg.channel(),
+            "To send a message to Alice type !message Alice <question>. You can also conversate with me by free typing in the chat! Enjoy the stories!",
+        )
+        .reply_to(msg.message_id())
+        .send()
+        .await?;
+
+    Ok(())
+}
