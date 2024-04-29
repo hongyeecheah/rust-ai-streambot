@@ -155,3 +155,150 @@ async fn on_msg(
         let bos_token = if args.twitch_model == "gemma" {
             ""
         } else {
+            "<s>"
+        };
+
+        let eos_token = if args.twitch_model == "gemma" {
+            ""
+        } else {
+            "</s>"
+        };
+
+        let user_name = if args.twitch_model == "gemma" {
+            "user"
+        } else {
+            ""
+        };
+
+        let assistant_name = if args.twitch_model == "gemma" {
+            "model"
+        } else {
+            ""
+        };
+
+        // Truncate the chat_messages array to 3 messages max messages
+        if chat_messages.len() > max_messages {
+            chat_messages.truncate(max_messages);
+        }
+
+        // build a string out of the chat_messages array of strings
+        // that have each message in the format <s><start_of_turn>user {message}<end_of_turn></s>
+        let mut chat_messages_history = String::new();
+        for message in chat_messages.iter() {
+            chat_messages_history.push_str(&format!("{}", message));
+        }
+
+        // Send message to the AI through mpsc channels format to model specs
+        let msg_text = format!(
+            "{}{}{} {}{}{}{}{}{}{}{} twitch chat user {} asked {}{}{}{} ",
+            bos_token,
+            system_start_token,
+            assistant_name,
+            args.twitch_prompt.clone(),
+            system_end_token,
+            eos_token,
+            bos_token,
+            chat_messages_history,
+            bos_token,
+            start_token,
+            user_name,
+            msg.sender().name(),
+            msg.text().to_string(),
+            end_token,
+            assistant_start_token,
+            assistant_name,
+        ); // Clone the message text
+
+        println!("\nTwitch sending msg_text:\n{}\n", msg_text);
+
+        let llm_thread = if args.twitch_model == "gemma" {
+            tokio::spawn(async move {
+                if let Err(e) = gemma(
+                    msg_text,
+                    max_tokens,
+                    temperature,
+                    quantized,
+                    Some("2b-it".to_string()),
+                    external_sender,
+                ) {
+                    eprintln!("Error running twitch gemma: {}", e);
+                }
+            })
+        } else if args.twitch_model == "mistral" {
+            tokio::spawn(async move {
+                if let Err(e) = mistral(
+                    msg_text,
+                    max_tokens,
+                    temperature,
+                    quantized,
+                    Some("auto".to_string()),
+                    external_sender,
+                ) {
+                    eprintln!("Error running twitch mistral: {}", e);
+                }
+            })
+        } else {
+            // print message and error out
+            eprintln!(
+                "Error: Invalid model specified for twitch chat {}",
+                args.twitch_model
+            );
+            tokio::spawn(async move {
+                external_sender
+                    .send("Error: Invalid model specified for twitch chat".to_string())
+                    .await
+                    .unwrap();
+            })
+        };
+
+        // thread token collection and wait for it to finish
+        let token_thread = tokio::spawn(async move {
+            let mut tokens = String::new();
+            while let Some(received) = external_receiver.recv().await {
+                tokens.push_str(&received);
+            }
+            tokens
+        });
+
+        // wait for llm thread to finish
+        llm_thread.await?;
+
+        let answer = token_thread.await?;
+
+        // remove all backslashes from answer:
+        let answer = answer.replace("\\", "");
+
+        println!("\nTwitch received answer:\n{}\n", answer);
+
+        // Check if the answer contains <|im_sep|>
+        let truncated_answer = if let Some(sep_index) = answer.find("<|im_sep|>") {
+            &answer[..sep_index]
+        } else {
+            &answer
+        };
+
+        // Split the answer into sections based on newline characters
+        let sections: Vec<&str> = truncated_answer.split('\n').collect();
+
+        for section in sections {
+            // Split the section into sentences
+            let mut sentences = Vec::new();
+            let mut start = 0;
+            for (i, c) in section.char_indices() {
+                if c == '.' || c == '!' || c == '?' {
+                    sentences.push(&section[start..i + 1]);
+                    start = i + 1;
+                }
+            }
+            if start < section.len() {
+                // sleep for a random range of time between 1 and 3 seconds
+                let _sleep_time = rand::thread_rng().gen_range(1..3);
+                sentences.push(&section[start..]);
+            }
+
+            let mut chunk = String::new();
+            for sentence in sentences {
+                let trimmed_sentence = sentence.trim();
+
+                // If adding the sentence to the chunk would exceed 500 characters,
+                // send the current chunk and start a new one
