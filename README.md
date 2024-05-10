@@ -8,4 +8,10 @@ Rust-ai-streambot is a transformative AI pipeline completely built in Rust. Focu
 -   **Comprehensive AI Analyzer**: Incorporates a high-level AI analyzer capable of processing and generating across various domains, facilitating a continuous flow of AI-generated content (In Progress).
 -   **Voice and Speech Integration**: Plans to integrate with Whisper for voice-driven interactions, allowing users to interact with the toolkit using voice commands and receive streaming text in return (Planned Feature).
 -   **Image Generation and NDI Output**: Supports generating images from text descriptions and outputting via NDI for a wide range of applications, including real-time content creation and broadcasting (In Beta Testing).
--   **Twitch Chat Interactive AI**: Integrated Twitch chat for real-time AI interactions, enabling users to engage with the toolkit through 
+-   **Twitch Chat Interactive AI**: Integrated Twitch chat for real-time AI interactions, enabling users to engage with the toolkit through chat commands and receive AI-generated responses.
+
+and many more...
+
+## Installing Rust AI Stream Analyzer Twitch Bot
+
+-   Ensure Rust and Cargo are installed. [Ru
