@@ -6,4 +6,5 @@ Rust-ai-streambot is a transformative AI pipeline completely built in Rust. Focu
 
 -   **Local LLM**: Leverages Rust-based LLMs, Mistral and Gemma, from the Candle framework for direct and efficient AI operations prioritizing local execution to harness the full power of MacOS Metal GPUs.
 -   **Comprehensive AI Analyzer**: Incorporates a high-level AI analyzer capable of processing and generating across various domains, facilitating a continuous flow of AI-generated content (In Progress).
--   **Voice and Speech Integration**: Plans to integrate with Whisper for voice-driven interactions, allowing use
+-   **Voice and Speech Integration**: Plans to integrate with Whisper for voice-driven interactions, allowing users to interact with the toolkit using voice commands and receive streaming text in return (Planned Feature).
+-   **Image Generation and NDI Output*
