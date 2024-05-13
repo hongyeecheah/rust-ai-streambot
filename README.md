@@ -14,4 +14,9 @@ and many more...
 
 ## Installing Rust AI Stream Analyzer Twitch Bot
 
--   Ensure Rust and Cargo are installed. [Ru
+-   Ensure Rust and Cargo are installed. [Rust Installation Guide](https://www.rust-lang.org/tools/install).
+-   A MacOS system with an M1/M2/M3 ARM GPU is ideal.
+
+1. **Clone the Repository**:
+
+    `
