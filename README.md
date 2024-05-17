@@ -26,4 +26,15 @@ and many more...
 2. **Navigate to the Project Directory**:
 
     ```bash
-    cd ru
+    cd rust-ai-streambot
+    ```
+
+3. **Compile with Metal GPU Support and NDI SDK support**:
+
+    ```bash
+    ./scripts/compile.sh
+    ```
+
+## Usage
+
+Rust 
