@@ -41,4 +41,8 @@ Rust AI Stream Analyzer Twitch Bot offers a broad range of AI-driven functionali
 
 ## License
 
-This project is license
+This project is licensed under the MIT License.
+
+## Author
+
+Hongyee Cheah, dedicated to the development of pioneering AI solutions with the Rust AI Stream Analyzer Twitch Bot. February 2024.
