@@ -37,4 +37,8 @@ and many more...
 
 ## Usage
 
-Rust AI Stream Analyzer Twitch Bot offers a broad range of AI-driven functionalities, including generating text-based content, analyzing network streams, and processing visu
+Rust AI Stream Analyzer Twitch Bot offers a broad range of AI-driven functionalities, including generating text-based content, analyzing network streams, and processing visual and audio inputs. More advanced features are in development. Follow the example commands in the documentation to get started.
+
+## License
+
+This project is license
